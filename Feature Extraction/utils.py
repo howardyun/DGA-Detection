@@ -1,7 +1,8 @@
 import pandas as pd
 import os
 import glob
-
+from collections import Counter
+import statistics
 # DGA（Domain Generation Algorithm）域名特征提取是一种用于检测恶意软件和网络攻击的技术。下面是一些常见的DGA域名特征提取的方向：
 
 # 域名长度特征：DGA生成的域名通常具有特定的长度范围，可以通过统计域名长度分布来进行特征提取。
@@ -19,58 +20,121 @@ import glob
 # 域名排列组合特征：DGA生成的域名通常具有排列组合的特征，即使用特定的字符组合、组件或模式生成域名。可以通过分析域名的排列组合特征来进行特征提取。
 
 # 域名网络行为特征：DGA生成的域名通常与恶意软件的网络行为相关联，如与C&C（Command and Control）服务器进行通信等。可以通过分析域名与其他网络行为的关联来提取特征。
+from collections import Counter
+import statistics
+from collections import Counter
+import statistics
 
-# 计算给入域名的长度信息包括（最长，最短，平均长度，中位长度，众数长度，长度范围）
-def calculateLen(datas):
-    # 计算最小长度
-    min_length = min(len(s) for s in datas)
+class DGADomainAnalyzer:
+    def __init__(self, domains):
+        self.domains = domains
 
-    # 计算最大长度
-    max_length = max(len(s) for s in datas)
+    def calculate_repeated_characters(self):
+        repeated_characters = []
+        for domain in self.domains:
+            if len(domain) > 0:
+                repeated_characters.append(max(Counter(domain).values()))  # 计算重复字符的最大出现次数
+            else:
+                repeated_characters.append(0)  # 如果域名为空字符串，则将重复字符的最大出现次数设置为0
+        return repeated_characters
 
-    # 计算平均长度
-    average_length = sum(len(s) for s in datas) / len(datas)
+    def calculate_character_frequency(self):
+        character_frequencies = []
+        for domain in self.domains:
+            if len(domain) > 0:
+                character_frequencies.append(Counter(domain))  # 计算字符频率
+            else:
+                character_frequencies.append(Counter())  # 如果域名为空字符串，则将字符频率设置为空Counter对象
+        return character_frequencies
 
-    # 计算中位数长度
-    sorted_lengths = sorted(len(s) for s in datas)
-    mid = len(sorted_lengths) // 2
-    if len(sorted_lengths) % 2 == 0:
-        median_length = (sorted_lengths[mid - 1] + sorted_lengths[mid]) / 2
-    else:
-        median_length = sorted_lengths[mid]
+    def calculate_vowel_consonant_ratio(self):
+        vowel_consonant_ratios = []
+        for domain in self.domains:
+            if len(domain.replace(' ', '')) > 0:
+                vowel_count = domain.count('a') + domain.count('e') + domain.count('i') + domain.count('o') + domain.count('u')  # 计算元音字母的数量
+                consonant_count = len(domain) - domain.count(' ') - vowel_count  # 计算辅音字母的数量
+                vowel_consonant_ratios.append(vowel_count / consonant_count)  # 计算元音字母与辅音字母的比例
+            else:
+                vowel_consonant_ratios.append(0)  # 如果域名为空字符串或只包含空格，则将元音辅音比例设置为0
+        return vowel_consonant_ratios
 
-    # 计算众数长度
-    length_counts = {}
-    for s in datas:
-        length = len(s)
-        length_counts[length] = length_counts.get(length, 0) + 1
-    mode_length = max(length_counts, key=length_counts.get)
+    def calculate_letter_digit_ratio(self):
+        letter_digit_ratios = []
+        for domain in self.domains:
+            if len(domain.replace(' ', '')) > 0 and domain.count('0') + domain.count('1') + domain.count('2') + domain.count('3') + domain.count('4') + domain.count('5') + domain.count('6') + domain.count('7') + domain.count('8') + domain.count('9') > 0:
+                letter_count = sum(c.isalpha() for c in domain)  # 计算字母的数量
+                digit_count = sum(c.isdigit() for c in domain)  # 计算数字的数量
+                letter_digit_ratios.append(letter_count / digit_count)  # 计算字母与数字的比例
+            else:
+                letter_digit_ratios.append(0)  # 如果域名为空字符串、只包含空格或不包含任何数字，则将字母数字比例设置为0
+        return letter_digit_ratios
 
-    # 计算长度范围
-    length_range = max_length - min_length
+    def calculate_domain_length(self):
+        domain_lengths = [len(domain) for domain in self.domains]  # 计算域名的长度
+        return domain_lengths
 
-    return {
-        'min_length': min_length,
-        'max_length': max_length,
-        'average_length': average_length,
-        'median_length': median_length,
-        'mode_length': mode_length,
-        'length_range': length_range
-    }
-# 被用于给域名长度信息作图使用的函数
-def calculateLen_figure(benign_data_calculate,malicious_data_calculate):
-    return
+    def calculate_max_min_avg_median_mode(self, values):
+        if len(values) > 0:
+            return max(values), min(values), sum(values) / len(values), statistics.median(values), statistics.mode(values)  # 计算值的最大值、最小值、平均值、中位数和众数
+        else:
+            return 0, 0, 0, 0, None  # 如果值为空列表，则将所有统计结果设置为0
 
+    def analyze_domains(self):
+        repeated_characters = self.calculate_repeated_characters()
+        repeated_characters_max, repeated_characters_min, repeated_characters_avg, repeated_characters_median, repeated_characters_mode = self.calculate_max_min_avg_median_mode(repeated_characters)
 
+        character_frequencies = self.calculate_character_frequency()
 
+        vowel_consonant_ratios = self.calculate_vowel_consonant_ratio()
+        vowel_consonant_ratio_max, vowel_consonant_ratio_min, vowel_consonant_ratio_avg, vowel_consonant_ratio_median, vowel_consonant_ratio_mode = self.calculate_max_min_avg_median_mode(vowel_consonant_ratios)
 
+        letter_digit_ratios = self.calculate_letter_digit_ratio()
+        letter_digit_ratio_max, letter_digit_ratio_min, letter_digit_ratio_avg, letter_digit_ratio_median, letter_digit_ratio_mode = self.calculate_max_min_avg_median_mode(letter_digit_ratios)
 
+        domain_lengths = self.calculate_domain_length()
+        domain_length_max, domain_length_min, domain_length_avg, domain_length_median, domain_length_mode = self.calculate_max_min_avg_median_mode(domain_lengths)
 
+        analysis_result = {
+            "Repeated Characters": {
+                # "values": repeated_characters,
+                "max": repeated_characters_max,
+                "min": repeated_characters_min,
+                "avg": repeated_characters_avg,
+                "median": repeated_characters_median,
+                "mode": repeated_characters_mode
+            },
+            # "Character Frequencies": character_frequencies,
+            "Vowel-Consonant Ratios": {
+                # "values": vowel_consonant_ratios,
+                "max": vowel_consonant_ratio_max,
+                "min": vowel_consonant_ratio_min,
+                "avg": vowel_consonant_ratio_avg,
+                "median": vowel_consonant_ratio_median,
+                "mode": vowel_consonant_ratio_mode
+            },
+            "Letter-Digit Ratios": {
+                # "values": letter_digit_ratios,
+                "max": letter_digit_ratio_max,
+                "min": letter_digit_ratio_min,
+                "avg": letter_digit_ratio_avg,
+                "median": letter_digit_ratio_median,
+                "mode": letter_digit_ratio_mode
+            },
+            "Domain Lengths": {
+                # "values": domain_lengths,
+                "max": domain_length_max,
+                "min": domain_length_min,
+                "avg": domain_length_avg,
+                "median": domain_length_median,
+                "mode": domain_length_mode
+            }
+        }
 
-
-
-
-def diff_file_comparation(myfuc):
+        return analysis_result
+    
+    
+# 工具函数，汇聚文件读入，特征处理的工作
+def diff_file_comparation(Analyzer):
     benign_folder_path = 'data/Benign'  # 文件夹的路径
     malicious_folder_path = 'data/DGA/2016-09-19-dgarchive_full'
     
@@ -90,7 +154,7 @@ def diff_file_comparation(myfuc):
         # 取出域名
         domains = data['domain'].unique()
         # 进行统计，添加结果
-        benign_data_calculate.append(['benign',myfuc(domains)]) 
+        benign_data_calculate.append(['benign',(Analyzer(domains)).analyze_domains()]) 
     
     # 恶意域名统计
     for file in malicious_file_paths:
@@ -101,9 +165,9 @@ def diff_file_comparation(myfuc):
         # 获取DGA家族
         label = data.iloc[:,0].to_list()[0]
         #获取结果
-        malicious_data_calculate.append([label, myfuc(domains)]) 
+        malicious_data_calculate.append([label,(Analyzer(domains)).analyze_domains()]) 
     return benign_data_calculate,malicious_data_calculate
 
-print(diff_file_comparation(calculateLen))
+print(diff_file_comparation(DGADomainAnalyzer))
     
     
