@@ -19,7 +19,7 @@ elements = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'
 
 # 处理字母转数字
 def AlpMapDigits(source_str):
-    max_length = 63
+    max_length = 255
     # 创建字符到下标的映射字典
     char_to_index = {char: index for index, char in enumerate(elements)}
     # 将字符串中的每个字符映射成数组的下标
