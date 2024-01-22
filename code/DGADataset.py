@@ -72,7 +72,7 @@ class DGATrueDataset(Dataset):
             # 获取csv文件列表
             # 拼接文件夹下所有csv文件数据
             for file in csv_files:
-                dataframe = pd.read_csv(file, header=None, nrows=10000)
+                dataframe = pd.read_csv(file, header=None, nrows=100)
 
                 # 提取域名和标签列，域名编码
                 # 处理大写
@@ -100,7 +100,7 @@ class DGATrueDataset(Dataset):
             # 获取csv文件列表
             # 拼接文件夹下所有csv文件数据
             for file in csv_files:
-                dataframe = pd.read_csv(file, header=None)
+                dataframe = pd.read_csv(file, header=None, nrows=100)
 
                 # 提取域名和标签列，域名编码
                 # 处理大写
@@ -176,7 +176,7 @@ class DGAFalseDataset(Dataset):
             # 获取csv文件列表
             # 拼接文件夹下所有csv文件数据
             for file in csv_files:
-                dataframe = pd.read_csv(file, header=None, nrows=10000)
+                dataframe = pd.read_csv(file, header=None, nrows=100)
 
                 # 提取域名和标签列，域名编码
                 # 按列切割，只要两列，一列域名，一列标签
@@ -205,7 +205,7 @@ class DGAFalseDataset(Dataset):
             # 获取csv文件列表
             # 拼接文件夹下所有csv文件数据
             for file in csv_files:
-                dataframe = pd.read_csv(file, header=None)
+                dataframe = pd.read_csv(file, header=None, nrows=100)
 
                 # 提取域名和标签列，域名编码
                 # 按列切割，只要两列，一列域名，一列标签
