@@ -2,14 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# 设定基准参数，按照需求改变，初始全设为0防止报错
-MAX_INDEX = 0
-MAX_STRING_LENGTH = 0
-EMBEDDING_DIMENSION = 0
-
 
 class LSTMModel(nn.Module):
-    def __init__(self, max_index, embedding_dimension=EMBEDDING_DIMENSION, hidden_size=256):
+    def __init__(self, max_index, embedding_dimension, hidden_size=256):
         """
         :param hidden_size: 隐藏层用来规定LSTM的
         """

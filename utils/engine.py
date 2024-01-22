@@ -13,7 +13,7 @@ def train_step(model: torch.nn.Module,
     """
     :param model: 要训练的pytorch模型
     :param dataloader: 训练模型dataLoader实例
-    :param loss_fn: 最小化pytorch损失函数
+    :param loss_fn: pytorch损失函数
     :param optimizer: pytorch优化器
     :param device: 目标设备,cuda或者cpu
     :return:
@@ -30,11 +30,17 @@ def train_step(model: torch.nn.Module,
         X, y = X.to(device), y.to(device)
 
         # 预测
-        y_pred = model(X)
+        y_pred = model(X).squeeze()
+        y = y.float()
 
         # 计算和累积损失
         loss = loss_fn(y_pred, y)
         train_loss += loss.item()
+
+        # 这里没再次sigmoid，模型中已经激化过
+        # 二分类训练计算
+        y_label = torch.round(y_pred)
+        train_acc += torch.eq(y_label, y).sum().item() / len(y_label)
 
         # 优化器设置零梯度
         optimizer.zero_grad()
@@ -45,10 +51,6 @@ def train_step(model: torch.nn.Module,
         # 优化器步进
         optimizer.step()
 
-        # 计算并累积所有批次的准确性指标
-        # 这里可能要改改,因为是二分类sigmoid激化之后,可能不需要argmax
-        y_pred_class = torch.argmax(torch.softmax(y_pred, dim=1), dim=1)
-        train_acc += (y_pred_class == y).sum().item() / len(y_pred)
         pass
 
     # 调整指标以获得每个批次的平均损失和准确性
@@ -66,7 +68,7 @@ def test_step(model: torch.nn.Module,
     """
     :param model: 要训练的pytorch模型
     :param dataloader: 训练模型dataLoader实例
-    :param loss_fn: 最小化pytorch损失函数
+    :param loss_fn: pytorch损失函数
     :param device: 目标设备,cuda或者cpu
     :return:
     """
@@ -78,14 +80,16 @@ def test_step(model: torch.nn.Module,
         for batch, (X, y) in enumerate(dataloader):
             X, y = X.to(device), y.to(device)
 
-            test_pred_logits = model(X)
+            test_pred_logits = model(X).squeeze()
+            y = y.float()
 
             loss = loss_fn(test_pred_logits, y)
             test_loss += loss.item()
 
-            # 这里可能要改改,因为是二分类sigmoid激化之后,可能不需要argmax
-            test_pred_labels = test_pred_logits.argmax(dim=1)
-            test_acc += ((test_pred_labels == y).sum().item() / len(test_pred_labels))
+            # 这里没再次sigmoid，模型中已经激化过
+            # 二分类训练计算
+            test_label = torch.round(test_pred_logits)
+            test_acc += torch.eq(test_label, y).sum().item() / len(test_label)
             pass
         pass
 

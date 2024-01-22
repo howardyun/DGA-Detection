@@ -2,14 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# 设定基准参数，按照需求改变，初始全设为0防止报错
-MAX_INDEX = 0
-MAX_STRING_LENGTH = 0
-EMBEDDING_DIMENSION = 0
-
 
 class MITModel(nn.Module):
-    def __init__(self, max_index, embedding_dimension=EMBEDDING_DIMENSION):
+    def __init__(self, max_index, embedding_dimension):
         super(MITModel, self).__init__()
 
         # Embedding层
@@ -57,4 +52,5 @@ class MITModel(nn.Module):
 
         return x
         pass
+
     pass

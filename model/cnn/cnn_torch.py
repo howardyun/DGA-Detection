@@ -2,18 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# 设定基准参数，按照需求改变，初始全设为0防止报错
-MAX_INDEX = 0
-MAX_STRING_LENGTH = 0
-max_index = MAX_INDEX
-max_string_length = MAX_STRING_LENGTH
-EMBEDDING_DIMENSION = 0
-NUM_CONV_FILTERS = 0
-
 
 class CNNModel(nn.Module):
-    def __init__(self, max_index, max_string_length, embedding_dimension=EMBEDDING_DIMENSION,
-                 num_conv_filters=NUM_CONV_FILTERS):
+    def __init__(self, max_index, max_string_length, embedding_dimension,
+                 num_conv_filters):
         """
         :param num_conv_filters: 卷积神经网络输出空间维度
         """
@@ -58,11 +50,16 @@ class CNNModel(nn.Module):
         x = self.embeddingCNN(x)
 
         # 五层卷积层，这里可能要改改，pytorch希望channel在最后一个维度
-        x2 = F.relu(self.conv2(x))
-        x3 = F.relu(self.conv3(x))
-        x4 = F.relu(self.conv4(x))
-        x5 = F.relu(self.conv5(x))
-        x6 = F.relu(self.conv6(x))
+        # x2 = F.relu(self.conv2(x))
+        # x3 = F.relu(self.conv3(x))
+        # x4 = F.relu(self.conv4(x))
+        # x5 = F.relu(self.conv5(x))
+        # x6 = F.relu(self.conv6(x))
+        x2 = F.relu(self.conv2(x.permute(0, 2, 1)))
+        x3 = F.relu(self.conv3(x.permute(0, 2, 1)))
+        x4 = F.relu(self.conv4(x.permute(0, 2, 1)))
+        x5 = F.relu(self.conv5(x.permute(0, 2, 1)))
+        x6 = F.relu(self.conv6(x.permute(0, 2, 1)))
 
         # 池化层
         x2 = self.pool2(x2).squeeze()

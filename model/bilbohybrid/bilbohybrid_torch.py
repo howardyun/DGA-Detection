@@ -2,20 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Assuming MAX_INDEX, MAX_STRING_LENGTH, EMBEDDING_DIMENSION, NUM_CONV_FILTERS, and MAX_FEATURES are defined elsewhere
-MAX_INDEX = 0
-MAX_STRING_LENGTH = 0
-EMBEDDING_DIMENSION = 0
-NUM_CONV_FILTERS = 0
-MAX_FEATURES = 0
-
 
 class BilBoHybridModel(nn.Module):
     """
     ann cnn lstm的组合模型
     """
 
-    def __init__(self, max_index, embedding_dimension=EMBEDDING_DIMENSION, num_conv_filters=NUM_CONV_FILTERS,
+    def __init__(self, max_index, embedding_dimension, num_conv_filters,
                  max_features=256):
         super(BilBoHybridModel, self).__init__()
 
@@ -58,7 +51,8 @@ class BilBoHybridModel(nn.Module):
         self.dropoutlstm = nn.Dropout(0.5)
 
         # ANN
-        self.extradense = nn.Linear(num_conv_filters * 5 + 256, 100)
+        # self.extradense = nn.Linear(num_conv_filters * 5 + 256, 100)
+        self.extradense = nn.Linear(num_conv_filters + 256, 100)
         self.output = nn.Linear(100, 1)
 
         self.dropoutsemifinal = nn.Dropout(0.5)
@@ -104,7 +98,7 @@ class BilBoHybridModel(nn.Module):
         x = F.relu(self.extradense(x))
         x = self.dropoutfinal(x)
         x = F.relu(self.output(x))
-      
+
         return torch.sigmoid(x)
         pass
 

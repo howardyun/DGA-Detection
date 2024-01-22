@@ -33,6 +33,16 @@ def AlpMapDigits(source_str):
     pass
 
 
+# 处理标签，False为0，True为1
+def ChangeLabel(flag):
+    if not flag:
+        return 0
+        pass
+    else:
+        return 1
+    pass
+
+
 # 处理标签为True的数据
 class DGATrueDataset(Dataset):
     """
@@ -62,7 +72,7 @@ class DGATrueDataset(Dataset):
             # 获取csv文件列表
             # 拼接文件夹下所有csv文件数据
             for file in csv_files:
-                dataframe = pd.read_csv(file, header=None)
+                dataframe = pd.read_csv(file, header=None, nrows=10000)
 
                 # 提取域名和标签列，域名编码
                 # 处理大写
@@ -70,10 +80,14 @@ class DGATrueDataset(Dataset):
 
                 # 按列切割，只要两列，一列域名，一列标签
                 dataframe = dataframe.iloc[:, 1:3]
+                dataframe.columns = [0, 1]
 
                 # 逐一编码
-                dataframe[1] = dataframe[1].apply(AlpMapDigits)
-                all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                dataframe[0] = dataframe[0].apply(AlpMapDigits)
+                dataframe[1] = dataframe[1].apply(ChangeLabel)
+
+                # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
                 pass
 
             # 获取第一列域名和倒数第一列标签的数据，并转成numpy
@@ -94,11 +108,14 @@ class DGATrueDataset(Dataset):
 
                 # 按列切割，只要两列，一列域名，一列标签
                 dataframe = dataframe.iloc[:, 1:3]
+                dataframe.columns = [0, 1]
 
                 # 逐一编码
-                dataframe = dataframe[1].apply(AlpMapDigits)
+                dataframe[0] = dataframe[0].apply(AlpMapDigits)
+                dataframe[1] = dataframe[1].apply(ChangeLabel)
 
-                all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
                 pass
 
             # 获取第一列域名的数据，并转成numpy
@@ -108,7 +125,10 @@ class DGATrueDataset(Dataset):
 
     def __getitem__(self, index):
         if self.train:
-            dataI, targetI = self.train_data[index, :], self.target[index]
+            # dataI, targetI = self.train_data[index, :], self.target[index]
+            dataI, targetI = self.train_data[index], self.target[index]
+            dataI = torch.tensor(dataI)
+            targetI = torch.tensor(targetI)
             return dataI, targetI
         else:
             dataI = self.test_data.iloc[index, :]
@@ -156,7 +176,7 @@ class DGAFalseDataset(Dataset):
             # 获取csv文件列表
             # 拼接文件夹下所有csv文件数据
             for file in csv_files:
-                dataframe = pd.read_csv(file, header=None)
+                dataframe = pd.read_csv(file, header=None, nrows=10000)
 
                 # 提取域名和标签列，域名编码
                 # 按列切割，只要两列，一列域名，一列标签
@@ -168,7 +188,10 @@ class DGAFalseDataset(Dataset):
 
                 # 逐一编码
                 dataframe[0] = dataframe[0].apply(AlpMapDigits)
-                all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                dataframe[1] = dataframe[1].apply(ChangeLabel)
+
+                # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
                 pass
 
             # print(all_dataframe.head(20))
@@ -194,7 +217,10 @@ class DGAFalseDataset(Dataset):
 
                 # 逐一编码
                 dataframe[0] = dataframe[0].apply(AlpMapDigits)
-                all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                dataframe[1] = dataframe[1].apply(ChangeLabel)
+
+                # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
+                all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
                 pass
 
             # 获取第一列域名的数据，并转成numpy
@@ -204,7 +230,10 @@ class DGAFalseDataset(Dataset):
 
     def __getitem__(self, index):
         if self.train:
-            dataI, targetI = self.train_data[index, :], self.target[index]
+            # dataI, targetI = self.train_data[index, :], self.target[index]
+            dataI, targetI = self.train_data[index], self.target[index]
+            dataI = torch.tensor(dataI)
+            targetI = torch.tensor(targetI)
             return dataI, targetI
         else:
             dataI = self.test_data.iloc[index, :]
