@@ -31,6 +31,7 @@ def SetLabel(root_csv_path, flag):
 
 
 if __name__ == '__main__':
-    SetLabel(f'../data/Benign', True)
-    SetLabel(f'../data/DGA/2016-09-19-dgarchive_full', False)
+    # SetLabel(f'../data/Benign', True)
+    # SetLabel(f'../data/DGA/2016-09-19-dgarchive_full', False)
+    SetLabel(f'../data/DGA/2020-06-19-dgarchive_full', False)
     pass

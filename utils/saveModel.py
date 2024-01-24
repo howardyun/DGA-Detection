@@ -23,3 +23,21 @@ def SaveModel(model: torch.nn.Module, target_dir: str, model_name: str):
     torch.save(obj=model.state_dict(), f=model_save_path)
 
     pass
+
+
+# 加载模型参数函数
+def LoadModel(model: torch.nn.Module, target_dir: str, model_name: str):
+    """
+    :param model: 要加载参数的模型
+    :param target_dir: 模型文件夹
+    :param model_name: 模型名
+    :return:
+    """
+    target_dir_path = Path(target_dir)
+    # 断言保证文件类型
+    assert model_name.endswith(".pth") or model_name.endswith(".pt"), "模型结尾需为 'pt' or 'pth'"
+    model_load_path = target_dir_path / model_name
+
+    model.load_state_dict(torch.load(f=model_load_path))
+    return model
+    pass

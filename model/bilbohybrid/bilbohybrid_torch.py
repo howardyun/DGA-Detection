@@ -11,6 +11,7 @@ class BilBoHybridModel(nn.Module):
     def __init__(self, max_index, embedding_dimension, num_conv_filters,
                  max_features=256):
         super(BilBoHybridModel, self).__init__()
+        self.num_conv_filters = num_conv_filters
 
         # CNN
         self.embeddingCNN = nn.Embedding(num_embeddings=max_index,
@@ -76,7 +77,20 @@ class BilBoHybridModel(nn.Module):
         x5 = self.pool5(x5).squeeze()
         x6 = self.pool6(x6).squeeze()
 
-        x_cnn = torch.cat([x2, x3, x4, x5, x6], dim=1)
+        # 处理张量问题
+        if x2.size() == torch.Size([self.num_conv_filters]):
+            # 模态融合,此时张量大小为[num_conv_filters],缺少了一个维度
+            x2 = torch.unsqueeze(x2, dim=0)
+            x3 = torch.unsqueeze(x3, dim=0)
+            x4 = torch.unsqueeze(x4, dim=0)
+            x5 = torch.unsqueeze(x5, dim=0)
+            x6 = torch.unsqueeze(x6, dim=0)
+            x_cnn = torch.cat([x2, x3, x4, x5, x6], dim=1)
+            pass
+        else:
+            # 模态融合,此时张量大小为[batch_size, num_conv_filters]
+            x_cnn = torch.cat([x2, x3, x4, x5, x6], dim=1)
+            pass
 
         x_cnn = self.dropoutcnnmid(x_cnn)
         x_cnn = F.relu(self.densecnn(x_cnn))

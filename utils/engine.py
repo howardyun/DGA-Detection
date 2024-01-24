@@ -41,10 +41,6 @@ def train_step(model: torch.nn.Module,
             train_loss += loss.item()
             pass
         except:
-            print('tensor张量计算处理:', sys.exc_info())
-            print('y:', y)
-            print('X:', X)
-            print('y_pred:', y_pred)
             y_pred = torch.unsqueeze(y_pred, dim=0)
             loss = loss_fn(y_pred, y)
             train_loss += loss.item()
@@ -96,15 +92,12 @@ def test_step(model: torch.nn.Module,
             test_pred_logits = model(X).squeeze()
             y = y.float()
 
+            # 处理tensor张量计算失误问题
             try:
                 loss = loss_fn(test_pred_logits, y)
                 test_loss += loss.item()
                 pass
             except:
-                print('tensor张量计算处理:', sys.exc_info())
-                print('y:', y)
-                print('X:', X)
-                print('test_pred_logits:', test_pred_logits)
                 test_pred_logits = torch.unsqueeze(test_pred_logits, dim=0)
                 loss = loss_fn(test_pred_logits, y)
                 test_loss += loss.item()
