@@ -1,3 +1,5 @@
+import sys
+
 import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -34,8 +36,19 @@ def train_step(model: torch.nn.Module,
         y = y.float()
 
         # 计算和累积损失
-        loss = loss_fn(y_pred, y)
-        train_loss += loss.item()
+        try:
+            loss = loss_fn(y_pred, y)
+            train_loss += loss.item()
+            pass
+        except:
+            print('tensor张量计算处理:', sys.exc_info())
+            print('y:', y)
+            print('X:', X)
+            print('y_pred:', y_pred)
+            y_pred = torch.unsqueeze(y_pred, dim=0)
+            loss = loss_fn(y_pred, y)
+            train_loss += loss.item()
+            pass
 
         # 这里没再次sigmoid，模型中已经激化过
         # 二分类训练计算
@@ -83,8 +96,19 @@ def test_step(model: torch.nn.Module,
             test_pred_logits = model(X).squeeze()
             y = y.float()
 
-            loss = loss_fn(test_pred_logits, y)
-            test_loss += loss.item()
+            try:
+                loss = loss_fn(test_pred_logits, y)
+                test_loss += loss.item()
+                pass
+            except:
+                print('tensor张量计算处理:', sys.exc_info())
+                print('y:', y)
+                print('X:', X)
+                print('test_pred_logits:', test_pred_logits)
+                test_pred_logits = torch.unsqueeze(test_pred_logits, dim=0)
+                loss = loss_fn(test_pred_logits, y)
+                test_loss += loss.item()
+                pass
 
             # 这里没再次sigmoid，模型中已经激化过
             # 二分类训练计算
