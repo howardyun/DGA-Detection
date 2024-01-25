@@ -60,6 +60,7 @@ if __name__ == '__main__':
         print(f"确定模型,设备为: {device}")
 
         # 确定训练模型
+        # model_ann = Net(255, 255, 255)
         model_ann = Net(255, 255, 255)
         model_cnn = CNNModel(255, 255, 255, 5)
         model_lstm = LSTMModel(255, 255)
@@ -70,15 +71,19 @@ if __name__ == '__main__':
         loss_fn = nn.BCEWithLogitsLoss()
         # 模型优化器
         optimizer_ann = torch.optim.SGD(params=model_ann.parameters(),
-                                        lr=0.001)
+                                        lr=0.001,
+                                        weight_decay=1e-4)
         optimizer_cnn = torch.optim.SGD(params=model_cnn.parameters(),
-                                        lr=0.01)
+                                        lr=0.1,
+                                        weight_decay=1e-4)
         optimizer_lstm = torch.optim.SGD(params=model_lstm.parameters(),
-                                         lr=0.01)
+                                         lr=0.1,
+                                         weight_decay=1e-4)
         optimizer_mit = torch.optim.SGD(params=model_mit.parameters(),
-                                        lr=0.01)
-        optimizer_bbyb = torch.optim.SGD(params=model_bbyb.parameters(),
-                                         lr=0.01)
+                                        lr=0.1,
+                                        weight_decay=1e-4)
+        optimizer_bbyb = torch.optim.Adam(params=model_bbyb.parameters(),
+                                          lr=0.0001)
 
         print("训练模型ANN开始")
         # 训练模型，标签为True
