@@ -1,8 +1,10 @@
 import torch
 import os
 from torch import nn
-from code.DGADataset import DGATrueDataset, DGAFalseDataset
+from DGADataset import DGATrueDataset, DGAFalseDataset
 from torch.utils.data import DataLoader, random_split, ConcatDataset
+import sys
+sys.path.append('model')
 # 所有可用模型
 from model.cnn.cnn_torch import CNNModel
 from model.lstm.lstm_torch import LSTMModel
@@ -212,7 +214,7 @@ if __name__ == '__main__':
         print(f"确定模型,设备为: {device}")
 
         # 确定模型基本结构
-        base_path = './modelPth/'
+        base_path = 'modelPth/'
         ann_name = 'ANNModel.pth'
         cnn_name = 'CNNModel.pth'
         lstm_name = 'LSTMModel.pth'
