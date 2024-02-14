@@ -47,74 +47,61 @@ def ChangeLabel(flag):
 class DGATrueDataset_ysx(Dataset):
     """
     DGA加载data中数据，对数据进行处理返回dataset
+    更新后数据集形态变成：域名，二分类标签，多分类标签。
+    其中二分类标签0为良性数据，1为恶性数据
+    其中多分类标签按照数据集不同家族标注
     """
 
     def __init__(self, dataframe, train=True, bni=True):
         """
-        :param root_csv_path: csv文件的根路径
-        :param train: True返回训练集逻辑的dataset，这个dataset也可以用dataLoader分割出训练集和测试集，
-        False直接返回测试集逻辑的dataset
+        :param dataframe: 固定批次数据生成的数据帧dataframe
+        :param train: 返回训练集数据
+        :param bni: True表示二分类
         """
         self.test_data = None
         self.train_data = None
         self.train = train
         self.bni = bni
 
-        # # 文件夹是否存在
-        # if not self._check_exists():
-        #     raise RuntimeError('Dataset not found.')
-
         if self.train:
             # 处理训练集
             all_dataframe = pd.DataFrame()
-            # 提取域名和标签列，域名编码
-            # 处理大写
-            # dataframe[1] = dataframe[1].str.lower()
-            # 按列切割，只要两列，一列域名，一列标签
+            # 按列切割，需要三列
+            # 结构为域名，二分类标签，多分类标签
             dataframe = dataframe.iloc[:, 0:3]
             dataframe.columns = [0, 1, 2]
+            # 逐一编码
             dataframe[0] = dataframe[0].apply(AlpMapDigits)
-            # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
             all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
 
-            # 获取第一列域名和倒数第一列标签的数据，并转成numpy
+            # 获取第一列域名
             self.train_data = all_dataframe.iloc[:, 0].values
             if self.bni:
+                # 如果是二分类，返回二分类标签
                 self.target = all_dataframe.iloc[:, -2].values
             else:
+                # 如果是多分类，返回多分类标签
                 self.target = all_dataframe.iloc[:, -1].values
             pass
 
         else:
             # 处理训练集
             all_dataframe = pd.DataFrame()
-            # 获取csv文件列表
-            # 拼接文件夹下所有csv文件数据
-            # 提取域名和标签列，域名编码
-            # 处理大写
-            # dataframe[1] = dataframe[1].str.lower()
-            # 按列切割，只要两列，一列域名，一列标签
-            # dataframe = dataframe.iloc[:, 1:3]
-            # dataframe.columns = [0, 1]
-            # # 逐一编码
-            # dataframe[0] = dataframe[0].apply(AlpMapDigits)
-            # dataframe[1] = dataframe[1].apply(ChangeLabel)
-            # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
             all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
-            # 获取第一列域名的数据，并转成numpy
+            # 获取第一列域名
             self.test_data = all_dataframe.iloc[:, 0].values
             pass
         pass
 
     def __getitem__(self, index):
         if self.train:
-            # dataI, targetI = self.train_data[index, :], self.target[index]
             dataI, targetI = self.train_data[index], self.target[index]
             dataI = torch.tensor(dataI)
             targetI = torch.tensor(targetI)
             return dataI, targetI
         else:
-            dataI = self.test_data.iloc[index]
+            dataI = self.test_data[index]
+            # dataI = self.test_data.iloc[index]
             dataI = torch.tensor(dataI)
             return dataI
         pass
@@ -125,108 +112,4 @@ class DGATrueDataset_ysx(Dataset):
         else:
             return len(self.test_data)
         pass
-
-    def _check_exists(self):
-        return os.path.exists(self.root_csv_path)
-
     pass
-
-# 处理标签为False的数据
-# class DGAFalseDataset_ysx(Dataset):
-#     """
-#     DGA加载data中数据，对数据进行处理返回dataset
-#     """
-#
-#     def __init__(self, dataframe, train=True):
-#         """
-#         :param root_csv_path: csv文件的根路径
-#         :param train: train模式还是test模式，默认train模型
-#         """
-#         self.test_data = None
-#         self.train_data = None
-#         # self.root_csv_path = root_csv_path
-#         self.train = train
-#
-#         # 文件夹是否存在
-#         if not self._check_exists():
-#             raise RuntimeError('Dataset not found.')
-#
-#         # 处理训练集和测试集
-#         if self.train:
-#
-#             # 处理训练集
-#             all_dataframe = pd.DataFrame()
-#
-#             # 提取域名和标签列，域名编码
-#             # 按列切割，只要两列，一列域名，一列标签
-#             dataframe = dataframe.iloc[:, [0, -1]]
-#             dataframe.columns = [0, 1]
-#
-#             # 处理大写
-#             dataframe[0] = dataframe[0].str.lower()
-#
-#             # 逐一编码
-#             dataframe[0] = dataframe[0].apply(AlpMapDigits)
-#             dataframe[1] = dataframe[1].apply(ChangeLabel)
-#
-#             # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
-#             all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
-#
-#             # print(all_dataframe.head(20))
-#             # 获取第一列域名和倒数第一列标签的数据，并转成numpy
-#             self.train_data = all_dataframe.iloc[:, 0].values
-#             self.target = all_dataframe.iloc[:, -1].values
-#
-#         else:
-#             # 处理训练集
-#             all_dataframe = pd.DataFrame()
-#             # 获取csv文件列表
-#             # 拼接文件夹下所有csv文件数据
-#             for file in csv_files:
-#                 dataframe = pd.read_csv(file, header=None, nrows=30000)
-#
-#                 # 提取域名和标签列，域名编码
-#                 # 按列切割，只要两列，一列域名，一列标签
-#                 dataframe = dataframe.iloc[:, [0, -1]]
-#                 dataframe.columns = [0, 1]
-#
-#                 # 处理大写
-#                 dataframe[0] = dataframe[0].str.lower()
-#
-#                 # 逐一编码
-#                 dataframe[0] = dataframe[0].apply(AlpMapDigits)
-#                 dataframe[1] = dataframe[1].apply(ChangeLabel)
-#
-#                 # all_dataframe = all_dataframe.append(dataframe, ignore_index=True)
-#                 all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
-#                 pass
-#
-#             # 获取第一列域名的数据，并转成numpy
-#             self.test_data = all_dataframe.iloc[:, 0].values
-#             pass
-#         pass
-#
-#     def __getitem__(self, index):
-#         if self.train:
-#             # dataI, targetI = self.train_data[index, :], self.target[index]
-#             dataI, targetI = self.train_data[index], self.target[index]
-#             dataI = torch.tensor(dataI)
-#             targetI = torch.tensor(targetI)
-#             return dataI, targetI
-#         else:
-#             dataI = self.test_data.iloc[index]
-#             dataI = torch.tensor(dataI)
-#             return dataI
-#         pass
-#
-#     def __len__(self):
-#         if self.train:
-#             return len(self.train_data)
-#         else:
-#             return len(self.test_data)
-#         pass
-#
-#     def _check_exists(self):
-#         return os.path.exists(self.root_csv_path)
-#
-#     pass

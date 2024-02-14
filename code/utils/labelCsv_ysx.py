@@ -66,17 +66,19 @@ def Set_label_list_form_benign(root_csv_path, target_csv_path):
         # 按列切割，只要两列，一列域名，一列标签
         dataframe = dataframe.iloc[:, 1:3]
         dataframe.columns = [0, 1]
+        # 逐一编码
         label_list = [0] * dataframe.shape[0]
+        # 二分类和多分类标签标注
         df = pd.DataFrame({'domainname_vec': dataframe[0], 'label_bin': label_list, 'label_multi': label_list})
-        print(df)
         df.to_csv(target_csv_path, index=False, header=False)
 
 
 def Set_label_list_form_malicious(root_csv_path_1, root_csv_path_2, target_csv_path_1, target_csv_path_2):
     """
-    :param root_csv_path: csv文件小文件夹根路径
-    :param root_csv_path_1: csv文件大文件夹根路径
-    :param target_csv_path: 输出文件夹
+    :param root_csv_path_1: csv文件小文件夹根路径
+    :param root_csv_path_2: csv文件大文件夹根路径
+    :param target_csv_path_1: 输出文件夹
+    :param target_csv_path_2: 输出文件夹
     :return:
     """
     print("第一个文件夹:")
@@ -85,10 +87,12 @@ def Set_label_list_form_malicious(root_csv_path_1, root_csv_path_2, target_csv_p
     index = 1
     csv_files1 = glob.glob(os.path.join(root_csv_path_1, '*.csv'))
     for file in csv_files1:
-        filename = file.split('/')[-1]
+        # 不同python版本对glob解释不同，如果只需要文件名，需要用os
+        # filename = file.split('/')[-1]
+        filename = os.path.basename(file)
         label = index
         # 判断文件是否在,如果在label等于之前的标签
-        if (filename in hash_table):
+        if filename in hash_table:
             print("same:" + filename)
             label = hash_table[filename]
         else:
@@ -104,6 +108,7 @@ def Set_label_list_form_malicious(root_csv_path_1, root_csv_path_2, target_csv_p
         dataframe[0] = dataframe[0].str.lower()
         # 逐一编码
         label_list = [label] * dataframe.shape[0]
+        # 二分类和多分类标签标注
         df = pd.DataFrame(
             {'domainname_vec': dataframe[0], 'label_bin': [1] * dataframe.shape[0], 'label_multi': label_list})
         df.to_csv(target_csv_path_1 + '/' + filename, index=False, header=False)
@@ -111,11 +116,12 @@ def Set_label_list_form_malicious(root_csv_path_1, root_csv_path_2, target_csv_p
     print("第二个文件夹:")
     csv_files2 = glob.glob(os.path.join(root_csv_path_2, '*.csv'))
     for file in csv_files2:
-        print(filename)
-        filename = file.split('/')[-1]
+        # 不同python版本对glob解释不同，如果只需要文件名，需要用os
+        # filename = file.split('/')[-1]
+        filename = os.path.basename(file)
         label = index
         # 判断文件是否在
-        if (filename in hash_table):
+        if filename in hash_table:
             print("same:" + filename)
             label = hash_table[filename]
         else:
@@ -170,7 +176,9 @@ def mix_data_generate_train_test(benign_root_csv_path, malicious_root_csv_path, 
     test_df = pd.concat([benign_test_df, malicious_test_df], ignore_index=True)
 
     train_df = train_df.sample(frac=1).reset_index(drop=True)
+    print(f"Train shape: {train_df.shape}")
     test_df = test_df.sample(frac=1).reset_index(drop=True)
+    print(f"Test shape: {test_df.shape}")
 
     train_df.to_csv('../../data/train' + year + '.csv', index=None, header=None)
     test_df.to_csv('../../data/test' + year + '.csv', index=None, header=None)

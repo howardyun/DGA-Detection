@@ -7,7 +7,7 @@ from tqdm.auto import tqdm
 from typing import Dict, List, Tuple
 
 from DataIterator import DataIterator
-from DGADataset_ysx import DGATrueDataset_ysx
+from code.DGADataset_ysx import DGATrueDataset_ysx
 
 
 # 单步模型训练函数
@@ -131,8 +131,8 @@ def train_ysx(model: torch.nn.Module,
               BATCH_SIZE: int) -> Dict[str, List]:
     """
     :param model: pytorch模型
-    :param train_dataloader: 训练模型dataLoader
-    :param test_dataloader: 测试模型dataLoader
+    :param train_file: 训练数据文件
+    :param test_file: 测试数据文件
     :param optimizer: 优化器
     :param loss_fn: 损失函数
     :param epochs: 训练次数
@@ -148,12 +148,17 @@ def train_ysx(model: torch.nn.Module,
 
     # 设备无关代码
     model.to(device)
-    data_iterator = DataIterator(train_file, chunksize=1000000)
-    test_dataset = DGATrueDataset_ysx(pd.read_csv(test_file), True, True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    train_loss, train_acc = 0, 0
+    test_loss, test_acc = 0, 0
     # 循环训练
     for epoch in tqdm(range(epochs)):
-        for data_chunk in data_iterator:
+        # 优化训练集和测试集读取，都采用迭代器读取，原因是全数据训练集四千万+，测试集一千万+
+        # 最终迭代器步进因改为训练集一百万一次，测试集二十五万一次
+        # 这个迭代器对象不可重置读取位置，只能重新创建充值读取位置
+        train_data_iterator = DataIterator(train_file, chunksize=1000000)
+        test_data_iterator = DataIterator(test_file, chunksize=250000)
+
+        for data_chunk in train_data_iterator:
             train_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取训练数据
             train_loss, train_acc = train_step(model=model,
@@ -161,12 +166,18 @@ def train_ysx(model: torch.nn.Module,
                                                loss_fn=loss_fn,
                                                optimizer=optimizer,
                                                device=device)
+            pass
+        pass
 
-        # 获取测试数据
-        test_loss, test_acc = test_step(model=model,
-                                        dataloader=test_loader,
-                                        loss_fn=loss_fn,
-                                        device=device)
+        for data_chunk in test_data_iterator:
+            test_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
+            # 获取测试数据
+            test_loss, test_acc = test_step(model=model,
+                                            dataloader=test_loader,
+                                            loss_fn=loss_fn,
+                                            device=device)
+            pass
+
         # 每轮信息
         print(
             f"Epoch: {epoch + 1} | "
