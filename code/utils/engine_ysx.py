@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from typing import Dict, List, Tuple
-
+from itertools import islice
 from DataIterator import DataIterator
 from code.DGADataset_ysx import DGATrueDataset_ysx
 
@@ -133,10 +133,13 @@ def train_ysx(model: torch.nn.Module,
     :param model: pytorch模型
     :param train_file: 训练数据文件
     :param test_file: 测试数据文件
+    :param data_flag: True表示全数据集，False表示部分数据集
+    :param data_iter: 非全数据集下数据迭代的次数
     :param optimizer: 优化器
     :param loss_fn: 损失函数
     :param epochs: 训练次数
     :param device: 目标设备
+    :param BATCH_SIZE: 训练批次
     :return:
     """
     # 最终需要的准确率数据
@@ -158,6 +161,8 @@ def train_ysx(model: torch.nn.Module,
         train_data_iterator = DataIterator(train_file, chunksize=1000000)
         test_data_iterator = DataIterator(test_file, chunksize=250000)
 
+        # data_flag是True时全数据集，False时非全数据集
+        # 非全数据集总量是data_iter * 上面设置的chunsize
         for data_chunk in train_data_iterator:
             train_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取训练数据
@@ -167,8 +172,6 @@ def train_ysx(model: torch.nn.Module,
                                                optimizer=optimizer,
                                                device=device)
             pass
-        pass
-
         for data_chunk in test_data_iterator:
             test_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取测试数据
@@ -177,7 +180,6 @@ def train_ysx(model: torch.nn.Module,
                                             loss_fn=loss_fn,
                                             device=device)
             pass
-
         # 每轮信息
         print(
             f"Epoch: {epoch + 1} | "
@@ -186,12 +188,13 @@ def train_ysx(model: torch.nn.Module,
             f"test_loss: {test_loss:.4f} | "
             f"test_acc: {test_acc:.4f}"
         )
-
         # 数据加入数据字典
         results["train_loss"].append(train_loss)
         results["train_acc"].append(train_acc)
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
+        pass
+
     # 返回最终数据
     return results
     pass
