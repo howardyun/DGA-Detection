@@ -279,10 +279,41 @@ def extract_data(benign_root_csv_path, malicious_root_csv_path, year):
     pass
 
 
+def remain_data(benign_root_csv_path, malicious_root_csv_path, year):
+    """
+    读取剩余到的40%数据作为预测集
+    :param benign_root_csv_path: 良性训练集
+    :param malicious_root_csv_path: 恶性训练集
+    :param year: 年份，2016还是2020
+    """
+    # 创建文件夹
+    target_dir = "../../data/extract_remain_data/" + year
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir, exist_ok=True)
+        pass
+    predict_file_path = "../../data/extract_remain_data/" + year + "/predict.csv"
+
+    predict_df = pd.DataFrame()
+    # 全部文件数组
+    csv_files_benign = glob.glob(os.path.join(benign_root_csv_path, '*.csv'))
+    csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
+    # 数据帧
+    for file in csv_files_benign:
+        predict_df = pd.concat([predict_df, pd.read_csv(file, header=None)], ignore_index=True)
+        pass
+    for file in csv_files_malicious:
+        predict_df = pd.concat([predict_df, pd.read_csv(file, header=None)], ignore_index=True)
+        pass
+
+    # 打乱
+    predict_df = predict_df.sample(frac=1).reset_index(drop=True)
+    predict_df.to_csv(predict_file_path, index=None, header=None, mode='w')
+    pass
+
+
 def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
     """
     读取抽取到的60%数据,分割80%作为训练集,20%作为测试集
-    读取剩余到的40%数据作为预测集
     :param benign_root_csv_path: 良性训练集
     :param malicious_root_csv_path: 恶性训练集
     :param year: 年份，2016还是2020
@@ -310,9 +341,9 @@ def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
         malicious_df = pd.concat([malicious_df, pd.read_csv(file, header=None)], ignore_index=True)
         pass
 
+    # 防止抽取时抽取出聚块的数据
     benign_df = benign_df.sample(frac=1).reset_index(drop=True)
     malicious_df = malicious_df.sample(frac=1).reset_index(drop=True)
-    print(f'pos weight: benign / malicious = {len(benign_df) / len(malicious_df)}')
     # 从抽取的60%数据中八二分割
     split_index = int(0.8 * len(benign_df))
     benign_train_df = benign_df[:split_index]
@@ -323,6 +354,9 @@ def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
     # 组合训练集和测试集数据
     train_data = pd.concat([benign_train_df, malicious_train_df], ignore_index=True)
     test_data = pd.concat([benign_test_df, malicious_test_df], ignore_index=True)
+    print(f'pos weight: benign / malicious = {len(benign_train_df) / len(malicious_train_df)}')
+    train_data = train_data.sample(frac=1).reset_index(drop=True)
+    test_data = test_data.sample(frac=1).reset_index(drop=True)
     train_data.to_csv(train_file_path, index=None, header=None, mode='w')
     test_data.to_csv(test_file_path, index=None, header=None, mode='w')
     pass
@@ -499,8 +533,12 @@ if __name__ == '__main__':
     #                              f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', False)
 
     # 随机抽取60 % 剩余40 % 数据
-    # extract_data(f'../../data/Benign_vec',
-    #              f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016')
+    extract_data(f'../../data/Benign_vec',
+                 f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016')
+    # 生成抽取后的预测数据
+    remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
+                        f'../../data/extract_remain_data/2016/malicious/extract', '2016')
+    # 生成抽取后的训练测试数据
     extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
                         f'../../data/extract_remain_data/2016/malicious/extract', '2016')
 

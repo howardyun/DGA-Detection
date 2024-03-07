@@ -137,28 +137,14 @@ def initPredictParam():
         flag = input("使用随机数据集预测0, 使用分割数据集预测1")
         if int(flag) == 1:
             # 分割数据集预测
-            flag = input("使用良性集0, 使用恶性集1")
+            flag = input("使用部分数据0, 全部数据1")
             if int(flag) == 1:
-                flag = input("使用部分数据0, 全部数据1")
-                if int(flag) == 1:
-                    predict_full_data_flag = True
-                    predict_file = '../data/extract_remain_data/2016/remain_malicious.csv'
-                    pass
-                else:
-                    predict_full_data_flag = False
-                    predict_file = '../data/extract_remain_data/2016/remain_malicious.csv'
-                    pass
+                predict_full_data_flag = True
+                predict_file = '../data/extract_remain_data/2016/predict.csv'
                 pass
             else:
-                flag = input("使用部分数据0, 全部数据1")
-                if int(flag) == 1:
-                    predict_full_data_flag = True
-                    predict_file = '../data/extract_remain_data/2016/remain_benign.csv'
-                    pass
-                else:
-                    predict_full_data_flag = False
-                    predict_file = '../data/extract_remain_data/2016/remain_benign.csv'
-                    pass
+                predict_full_data_flag = False
+                predict_file = '../data/extract_remain_data/2016/predict.csv'
                 pass
             pass
         else:
@@ -182,6 +168,7 @@ if __name__ == '__main__':
     if int(input_flag) == 0:
         initParam()
         print(f"确定模型,设备为: {device}, 是否是鲁棒性测试: {lb_flag}")
+        print(f"pos weight: {pos_weight_num}")
         print("请确认训练集是否正确,如不正确修改初始化函数")
         print(f"训练数据集文件为: {train_file}, {test_file}")
 
@@ -199,11 +186,11 @@ if __name__ == '__main__':
         pos_weight = pos_weight.to(device)
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         # 模型优化器
-        ann_lr = 0.0001
-        cnn_lr = 0.0001
-        lstm_lr = 0.0001
-        mit_lr = 0.0001
-        bbyb_lr = 0.0001
+        ann_lr = 0.00001
+        cnn_lr = 0.00001
+        lstm_lr = 0.00001
+        mit_lr = 0.00001
+        bbyb_lr = 0.00001
         optimizer_ann = torch.optim.SGD(params=model_ann.parameters(),
                                         lr=ann_lr)
         optimizer_cnn = torch.optim.SGD(params=model_cnn.parameters(),
