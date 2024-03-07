@@ -19,7 +19,7 @@ from torch.utils.data import ConcatDataset
 
 # 训练模型参数
 # 按照数据集正负样本比例变化改变
-pos_weight_num = 0.6
+pos_weight_num = 0.0202
 NUM_EPOCHS = 5
 BATCH_SIZE = 32
 NUM_WORKERS = os.cpu_count()
@@ -81,8 +81,8 @@ def initParam():
             test_file = '../data/test2016.csv'
             pass
         else:
-            train_file = '../data/train_partial2016.csv'
-            test_file = '../data/test_partial2016.csv'
+            train_file = '../data/extract_remain_data/2016/train.csv'
+            test_file = '../data/extract_remain_data/2016/test.csv'
             pass
         pass
 
@@ -182,6 +182,7 @@ if __name__ == '__main__':
     if int(input_flag) == 0:
         initParam()
         print(f"确定模型,设备为: {device}, 是否是鲁棒性测试: {lb_flag}")
+        print("请确认训练集是否正确,如不正确修改初始化函数")
         print(f"训练数据集文件为: {train_file}, {test_file}")
 
         # 确定训练模型
@@ -334,6 +335,7 @@ if __name__ == '__main__':
         print("模型预测")
         initPredictParam()
         print(f"确定模型,设备为: {device}")
+        print("请确认预测集是否正确,如不正确修改初始化函数")
 
         # 确定模型基本结构
         model_ann = Net(255, 255, 255)
