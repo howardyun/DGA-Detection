@@ -1,6 +1,6 @@
 import pandas as pd
 
-from code.DGADataset_ysx import DGATrueDataset_ysx
+from DGADataset_ysx import DGATrueDataset_ysx
 
 
 class DataIterator:
