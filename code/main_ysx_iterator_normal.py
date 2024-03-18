@@ -11,7 +11,6 @@ from model.lstm.lstm_torch import LSTMModel
 from model.mit.mit_torch import MITModel
 from model.ann.ann_torch import Net
 from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
-from model.transfomer_torch import TransformerModel
 
 # 所有工具类函数
 from utils.engine import train
@@ -43,7 +42,6 @@ family_predict_file = ''
 # 预测模型路径
 base_path = './modelPth/lb/2024022909/'
 
-transformer_name = '0.0001TransformerModel.pth'
 ann_name = '0.0001ANNModel.pth'
 cnn_name = '0.0001CNNModel.pth'
 lstm_name = '0.0001LSTMModel.pth'
@@ -186,19 +184,21 @@ if __name__ == '__main__':
     else:
         print('没有传参，按照手工进行设置')
 
-    if arg == False:
+    if not arg:
         input_flag = input("0训练模型, 1模型预测")
     else:
         input_flag = sys.argv[1]
     if int(input_flag) == 0:
-        initParam(arg, sys.argv[2], sys.argv[3])
+        if not arg:
+            initParam(arg, 0, 0)
+        else:
+            initParam(arg, sys.argv[2], sys.argv[3])
         print(f"确定模型,设备为: {device}, 是否是鲁棒性测试: {lb_flag}")
         print(f"pos weight: {pos_weight_num}")
         print("请确认训练集是否正确,如不正确修改初始化函数")
         print(f"训练数据集文件为: {train_file}, {test_file}")
 
         # 确定训练模型
-        model_transfomer = TransformerModel(255, 1, 256, 2, 4)
         model_ann = Net(255, 255, 255)
         model_cnn = CNNModel(255, 255, 255, 5)
         model_lstm = LSTMModel(255, 255)
@@ -212,15 +212,12 @@ if __name__ == '__main__':
         pos_weight = pos_weight.to(device)
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         # 模型优化器
-        transformer_lr = 0.00001
         ann_lr = 0.00001
         cnn_lr = 0.00001
         lstm_lr = 0.00001
         mit_lr = 0.00001
         bbyb_lr = 0.00001
 
-        optimizer_transfomer = torch.optim.SGD(params=model_transfomer.parameters(),
-                                               lr=transformer_lr)
         optimizer_ann = torch.optim.SGD(params=model_ann.parameters(),
                                         lr=ann_lr)
         optimizer_cnn = torch.optim.SGD(params=model_cnn.parameters(),
@@ -232,23 +229,9 @@ if __name__ == '__main__':
         optimizer_bbyb = torch.optim.SGD(params=model_bbyb.parameters(),
                                          lr=bbyb_lr)
 
-        print("训练模型transformer开始")
+        print("训练模型ANN开始")
         # 训练模型，标签为True
-        print("训练模型transformer")
-        results = train_ysx(model=model_transfomer,
-                            train_file=train_file,
-                            test_file=test_file,
-                            loss_fn=loss_fn,
-                            optimizer=optimizer_transfomer,
-                            epochs=NUM_EPOCHS,
-                            device=device,
-                            BATCH_SIZE=BATCH_SIZE)
-        # 保存训练结果
-        SaveResults(str(transformer_lr) + "TransformerModel", NUM_EPOCHS, results, lb_flag)
-        # 在训练新的数据集之前，清零梯度，并将模型设置为训练状态
-        optimizer_transfomer.zero_grad()
-        model_transfomer.train()
-
+        print("训练模型ANN")
         results = train_ysx(model=model_ann,
                             train_file=train_file,
                             test_file=test_file,
@@ -369,7 +352,6 @@ if __name__ == '__main__':
         print("请确认预测集是否正确,如不正确修改初始化函数")
 
         # 确定模型基本结构
-        model_transfomer = TransformerModel(255, 2, 256, 2, 4)
         model_ann = Net(255, 255, 255)
         model_cnn = CNNModel(255, 255, 255, 5)
         model_lstm = LSTMModel(255, 255)
@@ -377,7 +359,6 @@ if __name__ == '__main__':
         model_bbyb = BilBoHybridModel(255, 255, 5)
 
         # 加载模型参数
-        model_transfomer = LoadModel(model_transfomer)
         model_ann = LoadModel(model_ann, base_path, ann_name)
         model_cnn = LoadModel(model_cnn, base_path, cnn_name)
         model_lstm = LoadModel(model_lstm, base_path, lstm_name)
@@ -392,12 +373,6 @@ if __name__ == '__main__':
                 # 鲁棒家族
                 print(f"获取数据集: {family_predict_file}")
                 print("全数据集") if family_full_data_flag else print("部分数据集")
-                result = PredictionFamily(model=model_transfomer, model_name=transformer_name, file=family_predict_file,
-                                          device=device,
-                                          full_flag=family_full_data_flag,
-                                          BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
                 result = PredictionFamily(model=model_ann, model_name=ann_name, file=family_predict_file, device=device,
                                           full_flag=family_full_data_flag,
                                           BATCH_SIZE=BATCH_SIZE)
@@ -429,11 +404,6 @@ if __name__ == '__main__':
                 # 鲁棒正常
                 print(f"获取数据集: {predict_file}")
                 print("全数据集") if family_full_data_flag else print("部分数据集")
-                result = Predictions(model=model_transfomer, model_name=transformer_name, file=predict_file,
-                                     device=device,
-                                     full_flag=family_full_data_flag,
-                                     BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
 
                 result = Predictions(model=model_ann, model_name=ann_name, file=predict_file, device=device,
                                      full_flag=family_full_data_flag,
