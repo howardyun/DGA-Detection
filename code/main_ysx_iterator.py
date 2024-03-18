@@ -49,14 +49,17 @@ def readData():
     pass
 
 
-def initParam():
+def initParam(arg, p1, p2):
     """
     执行初始化流程
     """
     print(f"初始化选项")
     # 初始化全局变量
     global lb_flag, train_file, test_file
-    init_flag = input("是否为鲁棒性测试, 不是0, 是1")
+    if (arg):
+        init_flag = p1
+    else:
+        init_flag = input("是否为鲁棒性测试, 不是0, 是1")
     lb_flag = True if int(init_flag) == 1 else False
     if lb_flag:
         # 鲁棒性测试
@@ -73,7 +76,10 @@ def initParam():
         pass
     else:
         # 非鲁棒性测试,正常训练
-        flag = input("正常训练是否使用全数据集, 不是0, 是1")
+        if (arg):
+            flag = p2
+        else:
+            flag = input("正常训练是否使用全数据集, 不是0, 是1")
         if int(flag) == 1:
             train_file = '../data/train2016.csv'
             test_file = '../data/test2016.csv'
@@ -95,7 +101,7 @@ def initPredictParam():
     print("初始化选项")
     # 初始化全局变量
     global lb_flag, family_flag, family_full_data_flag, family_predict_file, predict_file, predict_full_data_flag
-    init_flag = input("正常预测0, 鲁棒性预测1")
+    init_flag = input("是否为鲁棒性测试, 不是0, 是1")
     lb_flag = True if int(init_flag) == 1 else False
     if lb_flag:
         # 鲁棒性
@@ -162,9 +168,24 @@ def initPredictParam():
 
 
 if __name__ == '__main__':
-    input_flag = input("0训练模型, 1模型预测")
+    arg = False
+    print(print(sys.argv))
+    if (len(sys.argv) > 1):
+        arg = True
+        print('按照参数设置配置')
+    else:
+        print('没有传参，按照手工进行设置')
+    # 如果有参数
+    if not arg:
+        input_flag = input("0训练模型, 1模型预测")
+    else:
+        input_flag = sys.argv[1]
     if int(input_flag) == 0:
-        initParam()
+        # 如果哟参数
+        if not arg:
+            initParam(arg, 0, 0)
+        else:
+            initParam(arg, sys.argv[2], sys.argv[3])
         print(f"确定模型,设备为: {device}, 是否是鲁棒性测试: {lb_flag}")
         print(f"pos weight: {pos_weight_num}")
         print("请确认训练集是否正确,如不正确修改初始化函数")
@@ -200,11 +221,21 @@ if __name__ == '__main__':
 
         # 模型优化器
         # ann,cnn,mit的学习率在大数据境况下较低(1e-4左右),而lstm和bbyb在大数据情况下较高(1e-2左右)
-        ann_lr = 0.0001
-        cnn_lr = 0.0001
-        lstm_lr = 0.0001
-        mit_lr = 0.0001
-        bbyb_lr = 0.0001
+        if not arg:
+            lr = float(input("学习率"))
+        else:
+            lr = float(sys.argv[4])
+        ann_lr = lr
+        cnn_lr = lr
+        lstm_lr = lr
+        mit_lr = lr
+        bbyb_lr = lr
+        print(f"lr+{lr}")
+        # ann_lr = 0.0001
+        # cnn_lr = 0.0001
+        # lstm_lr = 0.0001
+        # mit_lr = 0.0001
+        # bbyb_lr = 0.0001
         optimizer_ann = torch.optim.SGD(params=model_ann.parameters(),
                                         lr=ann_lr)
         optimizer_cnn = torch.optim.SGD(params=model_cnn.parameters(),
