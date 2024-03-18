@@ -2,20 +2,18 @@ import torch
 import os
 from torch import nn
 import sys
-from utils.engine_ysx import train_ysx
+from utils.engine_ysx import train_ysx, train_multi
 
 sys.path.append('model')
 # 所有可用模型
-from model.cnn.cnn_torch import CNNModel
-from model.lstm.lstm_torch import LSTMModel
-from model.mit.mit_torch import MITModel
-from model.ann.ann_torch import Net
-from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
+from model.cnn.cnn_torch import CNNModel, CNNMultiModel
+from model.lstm.lstm_torch import LSTMModel, LSTMMultiModel
+from model.mit.mit_torch import MITModel, MITMultiModel
+from model.ann.ann_torch import Net, NetMulti
+from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel, BBYBMultiModel
 # 所有工具类函数
-from utils.engine import train
 from utils.saveModel import SaveModel, LoadModel, SaveResults
-from utils.predictions import Predictions, PredictionFamily, SavePredictionsResults
-from torch.utils.data import ConcatDataset
+from utils.predictions import Predictions, PredictionFamily, SaveFilePath
 
 # 训练模型参数
 # 按照数据集正负样本比例变化改变
@@ -39,12 +37,12 @@ family_full_data_flag = False
 family_predict_file = ''
 
 # 预测模型路径
-base_path = './modelPth/lb/2024022909/'
-ann_name = '0.0001ANNModel.pth'
-cnn_name = '0.0001CNNModel.pth'
-lstm_name = '0.0001LSTMModel.pth'
-mit_name = '0.0001MITModel.pth'
-bbyb_name = '0.0001BBYBModel.pth'
+base_path = './modelPth/dga/2024031310'
+ann_name = '0.001ANNModel.pth'
+cnn_name = '0.001CNNModel.pth'
+lstm_name = '0.001LSTMModel.pth'
+mit_name = '0.001MITModel.pth'
+bbyb_name = '0.001BBYBModel.pth'
 
 
 def readData():
@@ -173,24 +171,40 @@ if __name__ == '__main__':
         print(f"训练数据集文件为: {train_file}, {test_file}")
 
         # 确定训练模型
-        model_ann = Net(255, 255, 255)
-        model_cnn = CNNModel(255, 255, 255, 5)
-        model_lstm = LSTMModel(255, 255)
-        model_mit = MITModel(255, 255)
-        model_bbyb = BilBoHybridModel(255, 255, 5)
+        bni_multi_flag = input("0二分类, 1多分类")
+        if int(bni_multi_flag) == 0:
+            print("载入二分类模型")
+            model_ann = Net(255, 255, 255)
+            model_cnn = CNNModel(255, 255, 255, 5)
+            model_lstm = LSTMModel(255, 255)
+            model_mit = MITModel(255, 255)
+            model_bbyb = BilBoHybridModel(255, 255, 5)
+            # 二分类函数损失函数和优化器
+            # 定义二元交叉熵损失函数，并使用 pos_weight 参数
+            # 正样本和负样本比例要按照数据集变化改变
+            pos_weight = torch.tensor([pos_weight_num])
+            pos_weight = pos_weight.to(device)
+            loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+            pass
+        else:
+            print("载入多分类模型")
+            # 2016年多分类为64个恶意+一个良性总共65个
+            model_ann = NetMulti(255, 255, 255, num_classes=65)
+            model_cnn = CNNMultiModel(255, 255, 255, 5, num_classes=65)
+            model_lstm = LSTMMultiModel(255, 255, num_classes=65)
+            model_mit = MITMultiModel(255, 255, num_classes=65)
+            model_bbyb = BBYBMultiModel(255, 255, 5, num_classes=65)
+            # 多分类损失函数
+            loss_fn = nn.CrossEntropyLoss()
+            pass
 
-        # 二分类函数损失函数和优化器
-        # 定义二元交叉熵损失函数，并使用 pos_weight 参数
-        # 正样本和负样本比例要按照数据集变化改变
-        pos_weight = torch.tensor([pos_weight_num])
-        pos_weight = pos_weight.to(device)
-        loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         # 模型优化器
-        ann_lr = 0.00001
-        cnn_lr = 0.00001
-        lstm_lr = 0.00001
-        mit_lr = 0.00001
-        bbyb_lr = 0.00001
+        # ann,cnn,mit的学习率在大数据境况下较低(1e-4左右),而lstm和bbyb在大数据情况下较高(1e-2左右)
+        ann_lr = 0.0001
+        cnn_lr = 0.0001
+        lstm_lr = 0.0001
+        mit_lr = 0.0001
+        bbyb_lr = 0.0001
         optimizer_ann = torch.optim.SGD(params=model_ann.parameters(),
                                         lr=ann_lr)
         optimizer_cnn = torch.optim.SGD(params=model_cnn.parameters(),
@@ -205,14 +219,27 @@ if __name__ == '__main__':
         print("训练模型ANN开始")
         # 训练模型，标签为True
         print("训练模型ANN")
-        results = train_ysx(model=model_ann,
-                            train_file=train_file,
-                            test_file=test_file,
-                            loss_fn=loss_fn,
-                            optimizer=optimizer_ann,
-                            epochs=NUM_EPOCHS,
-                            device=device,
-                            BATCH_SIZE=BATCH_SIZE)
+        if int(bni_multi_flag) == 0:
+            results = train_ysx(model=model_ann,
+                                train_file=train_file,
+                                test_file=test_file,
+                                loss_fn=loss_fn,
+                                optimizer=optimizer_ann,
+                                epochs=NUM_EPOCHS,
+                                device=device,
+                                BATCH_SIZE=BATCH_SIZE)
+            pass
+        else:
+            results = train_multi(model=model_ann,
+                                  train_file=train_file,
+                                  test_file=test_file,
+                                  loss_fn=loss_fn,
+                                  optimizer=optimizer_ann,
+                                  epochs=NUM_EPOCHS,
+                                  device=device,
+                                  BATCH_SIZE=BATCH_SIZE)
+            pass
+
         # 保存训练结果
         SaveResults(str(ann_lr) + "ANNModel", NUM_EPOCHS, results, lb_flag)
         # 在训练新的数据集之前，清零梯度，并将模型设置为训练状态
@@ -222,14 +249,27 @@ if __name__ == '__main__':
         print("训练模型CNN开始")
         # 训练模型，标签为True
         print("训练模型CNN")
-        results = train_ysx(model=model_cnn,
-                            train_file=train_file,
-                            test_file=test_file,
-                            loss_fn=loss_fn,
-                            optimizer=optimizer_cnn,
-                            epochs=NUM_EPOCHS,
-                            device=device,
-                            BATCH_SIZE=BATCH_SIZE)
+        if int(bni_multi_flag) == 0:
+            results = train_ysx(model=model_cnn,
+                                train_file=train_file,
+                                test_file=test_file,
+                                loss_fn=loss_fn,
+                                optimizer=optimizer_cnn,
+                                epochs=NUM_EPOCHS,
+                                device=device,
+                                BATCH_SIZE=BATCH_SIZE)
+            pass
+        else:
+            results = train_multi(model=model_cnn,
+                                  train_file=train_file,
+                                  test_file=test_file,
+                                  loss_fn=loss_fn,
+                                  optimizer=optimizer_cnn,
+                                  epochs=NUM_EPOCHS,
+                                  device=device,
+                                  BATCH_SIZE=BATCH_SIZE)
+            pass
+
         # 保存训练结果
         SaveResults(str(cnn_lr) + "CNNModel", NUM_EPOCHS, results, lb_flag)
         # 在训练新的数据集之前，清零梯度，并将模型设置为训练状态
@@ -239,14 +279,26 @@ if __name__ == '__main__':
         print("训练模型LSTM开始")
         # 训练模型，标签为True
         print("训练模型LSTM")
-        results = train_ysx(model=model_lstm,
-                            train_file=train_file,
-                            test_file=test_file,
-                            loss_fn=loss_fn,
-                            optimizer=optimizer_lstm,
-                            epochs=NUM_EPOCHS,
-                            device=device,
-                            BATCH_SIZE=BATCH_SIZE)
+        if int(bni_multi_flag) == 0:
+            results = train_ysx(model=model_lstm,
+                                train_file=train_file,
+                                test_file=test_file,
+                                loss_fn=loss_fn,
+                                optimizer=optimizer_lstm,
+                                epochs=NUM_EPOCHS,
+                                device=device,
+                                BATCH_SIZE=BATCH_SIZE)
+            pass
+        else:
+            results = train_multi(model=model_lstm,
+                                  train_file=train_file,
+                                  test_file=test_file,
+                                  loss_fn=loss_fn,
+                                  optimizer=optimizer_lstm,
+                                  epochs=NUM_EPOCHS,
+                                  device=device,
+                                  BATCH_SIZE=BATCH_SIZE)
+            pass
         # 保存训练结果
         SaveResults(str(lstm_lr) + "LSTMModel", NUM_EPOCHS, results, lb_flag)
         # 在训练新的数据集之前，清零梯度，并将模型设置为训练状态
@@ -256,14 +308,26 @@ if __name__ == '__main__':
         print("训练模型MIT开始")
         # 训练模型，标签为True
         print("训练模型MIT")
-        results = train_ysx(model=model_mit,
-                            train_file=train_file,
-                            test_file=test_file,
-                            loss_fn=loss_fn,
-                            optimizer=optimizer_mit,
-                            epochs=NUM_EPOCHS,
-                            device=device,
-                            BATCH_SIZE=BATCH_SIZE)
+        if int(bni_multi_flag) == 0:
+            results = train_ysx(model=model_mit,
+                                train_file=train_file,
+                                test_file=test_file,
+                                loss_fn=loss_fn,
+                                optimizer=optimizer_mit,
+                                epochs=NUM_EPOCHS,
+                                device=device,
+                                BATCH_SIZE=BATCH_SIZE)
+            pass
+        else:
+            results = train_multi(model=model_mit,
+                                  train_file=train_file,
+                                  test_file=test_file,
+                                  loss_fn=loss_fn,
+                                  optimizer=optimizer_mit,
+                                  epochs=NUM_EPOCHS,
+                                  device=device,
+                                  BATCH_SIZE=BATCH_SIZE)
+            pass
         # 保存训练结果
         SaveResults(str(mit_lr) + "MITModel", NUM_EPOCHS, results, lb_flag)
         # 在训练新的数据集之前，清零梯度，并将模型设置为训练状态
@@ -273,14 +337,26 @@ if __name__ == '__main__':
         print("训练模型BBYB开始")
         # 训练模型，标签为True
         print("训练模型BBYB")
-        results = train_ysx(model=model_bbyb,
-                            train_file=train_file,
-                            test_file=test_file,
-                            loss_fn=loss_fn,
-                            optimizer=optimizer_bbyb,
-                            epochs=NUM_EPOCHS,
-                            device=device,
-                            BATCH_SIZE=BATCH_SIZE)
+        if int(bni_multi_flag) == 0:
+            results = train_ysx(model=model_bbyb,
+                                train_file=train_file,
+                                test_file=test_file,
+                                loss_fn=loss_fn,
+                                optimizer=optimizer_bbyb,
+                                epochs=NUM_EPOCHS,
+                                device=device,
+                                BATCH_SIZE=BATCH_SIZE)
+            pass
+        else:
+            results = train_multi(model=model_bbyb,
+                                  train_file=train_file,
+                                  test_file=test_file,
+                                  loss_fn=loss_fn,
+                                  optimizer=optimizer_bbyb,
+                                  epochs=NUM_EPOCHS,
+                                  device=device,
+                                  BATCH_SIZE=BATCH_SIZE)
+            pass
         # 保存训练结果
         SaveResults(str(bbyb_lr) + "BBYBModel", NUM_EPOCHS, results, lb_flag)
         # 在训练新的数据集之前，清零梯度，并将模型设置为训练状态
@@ -346,91 +422,95 @@ if __name__ == '__main__':
                 # 鲁棒家族
                 print(f"获取数据集: {family_predict_file}")
                 print("全数据集") if family_full_data_flag else print("部分数据集")
-                result = PredictionFamily(model=model_ann, model_name=ann_name, file=family_predict_file, device=device,
-                                          full_flag=family_full_data_flag,
-                                          BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = PredictionFamily(model=model_cnn, model_name=cnn_name, file=family_predict_file, device=device,
-                                          full_flag=family_full_data_flag,
-                                          BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = PredictionFamily(model=model_lstm, model_name=lstm_name, file=family_predict_file,
-                                          device=device,
-                                          full_flag=family_full_data_flag,
-                                          BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = PredictionFamily(model=model_mit, model_name=mit_name, file=family_predict_file, device=device,
-                                          full_flag=family_full_data_flag,
-                                          BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = PredictionFamily(model=model_bbyb, model_name=bbyb_name, file=family_predict_file,
-                                          device=device,
-                                          full_flag=family_full_data_flag,
-                                          BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
+                results_file_dir, acc_pre_f1_file_path = SaveFilePath(lb_flag=lb_flag)
+                PredictionFamily(model=model_ann, model_name=ann_name, file=family_predict_file,
+                                 results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                                 device=device,
+                                 full_flag=family_full_data_flag,
+                                 BATCH_SIZE=BATCH_SIZE)
+                PredictionFamily(model=model_cnn, model_name=cnn_name, file=family_predict_file,
+                                 results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                                 device=device,
+                                 full_flag=family_full_data_flag,
+                                 BATCH_SIZE=BATCH_SIZE)
+                PredictionFamily(model=model_lstm, model_name=lstm_name, file=family_predict_file,
+                                 results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                                 device=device,
+                                 full_flag=family_full_data_flag,
+                                 BATCH_SIZE=BATCH_SIZE)
+                PredictionFamily(model=model_mit, model_name=mit_name, file=family_predict_file,
+                                 results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                                 device=device,
+                                 full_flag=family_full_data_flag,
+                                 BATCH_SIZE=BATCH_SIZE)
+                PredictionFamily(model=model_bbyb, model_name=bbyb_name, file=family_predict_file,
+                                 results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                                 device=device,
+                                 full_flag=family_full_data_flag,
+                                 BATCH_SIZE=BATCH_SIZE)
                 pass
             else:
                 # 鲁棒正常
                 print(f"获取数据集: {predict_file}")
                 print("全数据集") if family_full_data_flag else print("部分数据集")
-                result = Predictions(model=model_ann, model_name=ann_name, file=predict_file, device=device,
-                                     full_flag=family_full_data_flag,
-                                     BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = Predictions(model=model_cnn, model_name=cnn_name, file=predict_file, device=device,
-                                     full_flag=family_full_data_flag,
-                                     BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = Predictions(model=model_lstm, model_name=lstm_name, file=predict_file, device=device,
-                                     full_flag=family_full_data_flag,
-                                     BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = Predictions(model=model_mit, model_name=mit_name, file=predict_file, device=device,
-                                     full_flag=family_full_data_flag,
-                                     BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-                result = Predictions(model=model_bbyb, model_name=bbyb_name, file=predict_file, device=device,
-                                     full_flag=family_full_data_flag,
-                                     BATCH_SIZE=BATCH_SIZE)
-                SavePredictionsResults(results=result, lb_flag=lb_flag)
+                results_file_dir, acc_pre_f1_file_path = SaveFilePath(lb_flag=lb_flag)
+                Predictions(model=model_ann, model_name=ann_name, file=predict_file,
+                            results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                            device=device,
+                            full_flag=predict_full_data_flag,
+                            BATCH_SIZE=BATCH_SIZE)
+                Predictions(model=model_cnn, model_name=cnn_name, file=predict_file,
+                            results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                            device=device,
+                            full_flag=predict_full_data_flag,
+                            BATCH_SIZE=BATCH_SIZE)
+                Predictions(model=model_lstm, model_name=lstm_name, file=predict_file,
+                            results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                            device=device,
+                            full_flag=predict_full_data_flag,
+                            BATCH_SIZE=BATCH_SIZE)
+                Predictions(model=model_mit, model_name=mit_name, file=predict_file,
+                            results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                            device=device,
+                            full_flag=predict_full_data_flag,
+                            BATCH_SIZE=BATCH_SIZE)
+                Predictions(model=model_bbyb, model_name=bbyb_name, file=predict_file,
+                            results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                            device=device,
+                            full_flag=predict_full_data_flag,
+                            BATCH_SIZE=BATCH_SIZE)
                 pass
             pass
         else:
             # 正常
             print(f"获取数据集: {predict_file}")
             print("全数据集") if predict_full_data_flag else print("部分数据集")
-            result = Predictions(model=model_ann, model_name=ann_name, file=predict_file, device=device,
-                                 full_flag=predict_full_data_flag,
-                                 BATCH_SIZE=BATCH_SIZE)
-            SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-            result = Predictions(model=model_cnn, model_name=cnn_name, file=predict_file, device=device,
-                                 full_flag=predict_full_data_flag,
-                                 BATCH_SIZE=BATCH_SIZE)
-            SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-            result = Predictions(model=model_lstm, model_name=lstm_name, file=predict_file, device=device,
-                                 full_flag=predict_full_data_flag,
-                                 BATCH_SIZE=BATCH_SIZE)
-            SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-            result = Predictions(model=model_mit, model_name=mit_name, file=predict_file, device=device,
-                                 full_flag=predict_full_data_flag,
-                                 BATCH_SIZE=BATCH_SIZE)
-            SavePredictionsResults(results=result, lb_flag=lb_flag)
-
-            result = Predictions(model=model_bbyb, model_name=bbyb_name, file=predict_file, device=device,
-                                 full_flag=predict_full_data_flag,
-                                 BATCH_SIZE=BATCH_SIZE)
-            SavePredictionsResults(results=result, lb_flag=lb_flag)
+            results_file_dir, acc_pre_f1_file_path = SaveFilePath(lb_flag=lb_flag)
+            Predictions(model=model_ann, model_name=ann_name, file=predict_file,
+                        results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                        device=device,
+                        full_flag=predict_full_data_flag,
+                        BATCH_SIZE=BATCH_SIZE)
+            Predictions(model=model_cnn, model_name=cnn_name, file=predict_file,
+                        results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                        device=device,
+                        full_flag=predict_full_data_flag,
+                        BATCH_SIZE=BATCH_SIZE)
+            Predictions(model=model_lstm, model_name=lstm_name, file=predict_file,
+                        results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                        device=device,
+                        full_flag=predict_full_data_flag,
+                        BATCH_SIZE=BATCH_SIZE)
+            Predictions(model=model_mit, model_name=mit_name, file=predict_file,
+                        results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                        device=device,
+                        full_flag=predict_full_data_flag,
+                        BATCH_SIZE=BATCH_SIZE)
+            Predictions(model=model_bbyb, model_name=bbyb_name, file=predict_file,
+                        results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
+                        device=device,
+                        full_flag=predict_full_data_flag,
+                        BATCH_SIZE=BATCH_SIZE)
             pass
         pass
     pass

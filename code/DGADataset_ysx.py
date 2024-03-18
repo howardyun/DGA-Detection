@@ -85,11 +85,30 @@ class DGATrueDataset_ysx(Dataset):
             pass
 
         else:
+            # 处理预测集，预测集除了返回训练集的中的域名编码，二分类或者多分类标签，还有一列未编码后的域名
             # 处理训练集
             all_dataframe = pd.DataFrame()
+            # 按列切割，需要三列
+            # 结构为域名，二分类标签，多分类标签
+            dataframe = dataframe.iloc[:, 0:3]
+            dataframe.columns = [0, 1, 2]
+            # 逐一编码
+            dataframe[3] = dataframe[0]
+            dataframe[0] = dataframe[0].apply(AlpMapDigits)
             all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
+
             # 获取第一列域名
             self.test_data = all_dataframe.iloc[:, 0].values
+            if self.bni:
+                # 如果是二分类，返回二分类标签
+                self.target = all_dataframe.iloc[:, 1].values
+                self.name = all_dataframe.iloc[:, -1].values
+                pass
+            else:
+                # 如果是多分类，返回多分类标签
+                self.target = all_dataframe.iloc[:, 2].values
+                self.name = all_dataframe.iloc[:, -1].values
+                pass
             pass
         pass
 
@@ -100,10 +119,10 @@ class DGATrueDataset_ysx(Dataset):
             targetI = torch.tensor(targetI)
             return dataI, targetI
         else:
-            dataI = self.test_data[index]
-            # dataI = self.test_data.iloc[index]
+            dataI, targetI, dgaName = self.test_data[index], self.target[index], self.name[index]
             dataI = torch.tensor(dataI)
-            return dataI
+            targetI = torch.tensor(targetI)
+            return dataI, targetI, dgaName
         pass
 
     def __len__(self):
