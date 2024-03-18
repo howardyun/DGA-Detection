@@ -173,7 +173,7 @@ if __name__ == '__main__':
     # 参数1："0训练模型, 1模型预测"
     # 参数2: "是否为鲁棒性测试, 不是0, 是1"
     # 参数3: "正常训练是否使用全数据集, 不是0, 是1"
-
+    # 参数4:“学习率”
     arg = False
     print(print(sys.argv))
     if (len(sys.argv) > 1):
@@ -210,7 +210,12 @@ if __name__ == '__main__':
         pos_weight = pos_weight.to(device)
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         # 模型优化器
-        transformer_lr = 0.01
+        if not arg:
+            transformer_lr = float(input("学习率"))
+        else:
+            transformer_lr = float(sys.argv[4])
+        print(f"lr+{transformer_lr}")
+        # transformer_lr = 0.01
 
         optimizer_transfomer = torch.optim.AdamW(params=model_transfomer.parameters(),
                                                  lr=transformer_lr)
