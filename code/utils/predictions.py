@@ -1,5 +1,6 @@
 import csv
 import os.path
+import time
 from datetime import datetime
 from pathlib import Path
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -17,19 +18,14 @@ def GetCurrentTime():
     获取当前时间,用于成为文件夹名字
     :return:
     """
-    # 获取当前年月日
-    # 获取当前日期和时间
-    current_datetime = datetime.now()
-    current_year = current_datetime.year
-    current_month = current_datetime.month
-    current_day = current_datetime.day
-    current_hour = current_datetime.hour
-    year_str = str(current_year)
-    month_str = str(current_month).zfill(2)
-    day_str = str(current_day).zfill(2)
-    hour_str = str(current_hour).zfill(2)
-
-    return year_str + month_str + day_str + hour_str
+    # 生成时间戳作为文件夹名
+    # 防止多个进程同时写入文件时出错
+    timestamp = int(time.time())
+    # 将时间戳转换为 datetime 对象
+    datetime_obj = datetime.fromtimestamp(timestamp)
+    # 格式化日期时间字符串
+    formatted_datetime = datetime_obj.strftime("%Y_%m_%d_%H_%M_%S")
+    return str(formatted_datetime)
     pass
 
 
@@ -280,45 +276,6 @@ def SaveAccPreF1(model_name: str, data_file_path: str, results_path: str, acc_pr
     pass
 
 
-def SaveMultiAccPreF1(model_name: str, data_file_path: str, results_path: str, acc_pre_f1_path: str):
-    """
-    多分类计算准确率精确率等,用sklearn方便一点
-    这个方法评估的是模型整体对多分类的性能,还不是模型对每个多分类标签的性能
-    :param model_name: 模型名
-    :param data_file_path: 数据文件路径
-    :param results_path: 模型记录文件路径
-    :param acc_pre_f1_path: 准确率精准率F1-score等文件路径
-    :return:
-    """
-    # 判断是否为新建文件
-    if os.path.getsize(acc_pre_f1_path) == 0:
-        # 写入标题
-        with open(str(acc_pre_f1_path), mode='w', newline="") as csvfile:
-            df = pd.DataFrame(index=None)
-            df[0] = ['model_name', 'file_name', 'model_accuracy', 'model_precision', 'model_recall', 'model_f1']
-            df.to_csv(acc_pre_f1_path, index=False, header=False)
-            pass
-        pass
-    # 数据帧
-    # 计算准确率精准率f1
-    df = pd.read_csv(results_path, usecols=[1, 2])
-    # 变成tensor
-    tensor_label = torch.tensor(df['label'].to_numpy())
-    tensor_pred = torch.tensor(df[model_name].to_numpy())
-    # 用sklearn计算
-    accuracy = accuracy_score(tensor_label, tensor_pred)
-    precision = precision_score(tensor_label, tensor_pred)
-    recall = recall_score(tensor_label, tensor_pred)
-    f1 = f1_score(tensor_label)
-
-    # 插入数据
-    df = pd.read_csv(acc_pre_f1_path, header=None)
-    columns = len(df.columns.tolist())
-    df[columns] = [model_name, data_file_path, accuracy, precision, recall, f1]
-    df.to_csv(acc_pre_f1_path, index=False, header=False)
-    pass
-
-
 def SaveFamilyAccPreF1(model_name: str, data_file_path: str, results_path: str, acc_pre_f1_path: str):
     """
     计算家族
@@ -439,73 +396,6 @@ def Predictions(model: torch.nn.Module,
     # 一个模型预测结果
     SaveAccPreF1(model_name=model_name, data_file_path=file, results_path=results_path,
                  acc_pre_f1_path=acc_pre_f1_file_path)
-    pass
-
-
-# 开放一个计算多酚类AccPreF1的方法
-def PredictionMulti(model: torch.nn.Module,
-                    model_name: str,
-                    file: str,
-                    results_file_dir: str,
-                    acc_pre_f1_file_path: str,
-                    device: torch.device,
-                    full_flag: bool,
-                    BATCH_SIZE: int,
-                    partial_data=1000):
-    """
-    :param model: 预测是用的模型
-    :param model_name: 模型名字
-    :param file: 预测文件路径
-    :param results_file_dir: 每个模型预测结果的文件目录路径
-    :param acc_pre_f1_file_path: 每个模型预测结果统计的文件路径
-    :param device: 设备
-    :param full_flag: 全数据集标志
-    :param BATCH_SIZE: 批次数量
-    :param partial_data: 非全数据集数据
-    :return: 整体的准确率
-    """
-    # 预测数据的dataLoader
-    predict_df = pd.read_csv(file) if full_flag else pd.read_csv(file, nrows=partial_data)
-    dataloader = DataLoader(DGATrueDataset_ysx(predict_df, False), batch_size=BATCH_SIZE, shuffle=True)
-
-    # 设备设置模型
-    model.to(device)
-
-    # 打开模型评估模式和推理模式
-    model.eval()
-
-    # 评估预测准确率, 现在用于检测torch计算中tensor优化问题
-    pred_acc = 0
-
-    # 结果文件路径
-    results_path = ''
-    with torch.inference_mode():
-        for batch, (X, y, dga_name) in enumerate(dataloader):
-            X, y = X.to(device), y.to(device)
-            pred_logits = model(X).squeeze()
-            y = y.float()
-
-            # 这里没再次sigmoid，模型中已经激化过
-            # 二分类训练计算
-            pred_label = torch.round(pred_logits)
-            try:
-                pred_acc += torch.eq(pred_label, y).sum().item() / len(pred_label)
-                pass
-            except:
-                pred_label = pred_label.unsqueeze(0)
-                pred_acc += torch.eq(pred_label, y).sum().item() / len(pred_label)
-                pass
-
-            # 写入结果
-            results_path = SaveResults(model_name=model_name, X=dga_name, y=y.cpu(), label=pred_label.cpu(),
-                                       target_path=results_file_dir)
-            pass
-        pass
-
-    # 计算最终结果
-    # 一个模型预测结果
-    SaveMultiAccPreF1(model_name=model_name, data_file_path=file, results_path=results_path,
-                      acc_pre_f1_path=acc_pre_f1_file_path)
     pass
 
 
