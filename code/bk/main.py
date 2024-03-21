@@ -26,8 +26,8 @@ def readData():
 if __name__ == '__main__':
     # 返回训练集逻辑dataset
     print("获取数据集")
-    dga_true_train_dataset = DGATrueDataset(f'../data/Benign', True)
-    dga_false_train_dataset = DGAFalseDataset(f'../data/DGA/2016-09-19-dgarchive_full', True)
+    dga_true_train_dataset = DGATrueDataset(f'../../data/Benign', True)
+    dga_false_train_dataset = DGAFalseDataset(f'../../data/DGA/2016-09-19-dgarchive_full', True)
 
     # """
     dga_true_train_dataset_size = len(dga_true_train_dataset)

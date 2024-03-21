@@ -11,8 +11,8 @@ from model.lstm.lstm_torch import LSTMModel
 from model.mit.mit_torch import MITModel
 from model.ann.ann_torch import Net
 from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
-from model.transfomer_org import TransformerModel
-from model.TopM_tmr import DGAAttentionModel
+from model.transfomer_org import Transformer
+# from model.TopM_tmr import DGAAttentionModel
 
 # 所有工具类函数
 from utils.engine import train
@@ -22,9 +22,9 @@ from torch.utils.data import ConcatDataset
 
 # 训练模型参数
 # 按照数据集正负样本比例变化改变
-pos_weight_num = 0.0202
-NUM_EPOCHS = 10
-BATCH_SIZE = 64
+pos_weight_num = 1
+NUM_EPOCHS = 100
+BATCH_SIZE = 10
 NUM_WORKERS = os.cpu_count()
 # 训练设备
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -87,8 +87,8 @@ def initParam(arg, p1, p2):
             test_file = '../data/test2016.csv'
             pass
         else:
-            train_file = '../data/extract_remain_data/2016/train.csv'
-            test_file = '../data/extract_remain_data/2016/test.csv'
+            train_file = '../data/MiniDataset/train.csv'
+            test_file = '../data/MiniDataset/test.csv'
             pass
         pass
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
         # model_transfomer = TransformerModel(255, 1, 256, 2, 4)
 
         # 确定训练模型
-        model_transfomer = DGAAttentionModel(64, 8, 20, 1, 1, 1, 255)
+        model_transfomer = Transformer(40, 4, 4, 1, 40, 255, 1)
 
         # 二分类函数损失函数和优化器
         # 定义二元交叉熵损失函数，并使用 pos_weight 参数
@@ -243,7 +243,7 @@ if __name__ == '__main__':
             SaveModel(model=model_transfomer,
                       target_dir="modelPth",
                       lb_flag=lb_flag,
-                      model_name=str(transformer_lr) + "ANNModel.pth")
+                      model_name=str(transformer_lr) + "TransformerOrgModel.pth")
             pass
         pass
     else:
@@ -254,7 +254,7 @@ if __name__ == '__main__':
         print("请确认预测集是否正确,如不正确修改初始化函数")
 
         # 确定模型基本结构
-        model_transfomer = TransformerModel(255, 2, 256, 2, 4)
+        model_transfomer = Transformer(255, 2, 256, 2, 4)
 
         # 加载模型参数
         model_transfomer = LoadModel(model_transfomer)

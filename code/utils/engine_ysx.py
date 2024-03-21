@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from typing import Dict, List, Tuple
 from itertools import islice
-from code.DataIterator import DataIterator, MultiDataIterator
-from code.DGADataset_ysx import DGATrueDataset_ysx
+from DataIterator import DataIterator, MultiDataIterator
+from DGADataset_ysx import DGATrueDataset_ysx
 
 
 # 单步模型训练函数

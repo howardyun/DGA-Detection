@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
-from code.DGADataset_ysx import DGATrueDataset_ysx
+from DGADataset_ysx import DGATrueDataset_ysx
 
 
 def GetCurrentTime():

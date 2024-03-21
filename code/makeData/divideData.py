@@ -517,34 +517,47 @@ def lb_data_generate_train_test(benign_root_csv_path, malicious_root_csv_path, y
 
 
 if __name__ == '__main__':
-    # 给良性数据集打标签
-    # Set_label_list_form_benign(f'../../data/Benign', f'../../data/Benign_vec/Benign.csv')
-    # # 给恶意数据集打标签
-    # Set_label_list_form_malicious(f'../../data/DGA/2016-09-19-dgarchive_full',
-    #                               f'../../data/DGA/2020-06-19-dgarchive_full',
-    #                               f'../../data/DGA_vec/2016-09-19-dgarchive_full',
-    #                               f'../../data/DGA_vec/2020-06-19-dgarchive_full')
-    # SetLabel(f'../data/DGA/2020-06-19-dgarchive_full', False)
+    benign_root_csv_path = '../../data/Benign_vec'
+    malicious_root_csv_path = '../../data/DGA_vec/2016-09-19-dgarchive_full'
+    target_dir = "../../data/MiniDataset"
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir, exist_ok=True)
+        pass
+    # 保存文件路径
+    train_file_path = "../../data/MiniDataset/" + '' + "/train.csv"
+    test_file_path = "../../data/extract_remain_data/" + '' + "/test.csv"
 
-    # 组合良性数据集和恶性数据集,全数据集
-    # mix_data_generate_train_test(f'../../data/Benign_vec',
-    #                              f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', True)
-    # mix_data_generate_train_test(f'../../data/Benign_vec',
-    #                              f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', False)
+    benign_df = pd.DataFrame()
+    malicious_df = pd.DataFrame()
+    # 全部文件数组
+    csv_files_benign = glob.glob(os.path.join(benign_root_csv_path, '*.csv'))
+    csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
+    # 数据帧
+    for file in csv_files_benign:
+        benign_df = pd.concat([benign_df, pd.read_csv(file, header=None)], ignore_index=True)
+        pass
+    for file in csv_files_malicious:
+        malicious_df = pd.concat([malicious_df, pd.read_csv(file, header=None)], ignore_index=True)
+        pass
 
-    # 随机抽取60 % 剩余40 % 数据
-    extract_data(f'../../data/Benign_vec',
-                 f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016')
-    # # 生成抽取后的预测数据
-    remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
-                f'../../data/extract_remain_data/2016/malicious/extract', '2016')
-    # # 生成抽取后的训练测试数据
-    extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
-                        f'../../data/extract_remain_data/2016/malicious/extract', '2016')
+    # 防止抽取时抽取出聚块的数据
+    benign_df = benign_df.sample(frac=1).reset_index(drop=True)
+    malicious_df = malicious_df.sample(frac=1).reset_index(drop=True)
 
-    # 生成全数据集鲁棒性数据
-    # lb_data_generate_train_test(f'../../data/Benign_vec',
-    #                             f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', True)
-    # lb_data_generate_train_test(f'../../data/Benign_vec',
-    #                             f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', False, 100000)
-    pass
+    # 从抽取的60%数据中八二分割
+    split_index = 1000
+    benign_train_df = benign_df[:split_index]
+    benign_test_df = benign_df[:split_index]
+
+    split_index = 1000
+    malicious_train_df = malicious_df[:split_index]
+    malicious_test_df = malicious_df[:split_index]
+
+    # 组合训练集和测试集数据
+    train_data = pd.concat([benign_train_df, malicious_train_df], ignore_index=True)
+    test_data = pd.concat([benign_test_df, malicious_test_df], ignore_index=True)
+    print(f'pos weight: benign / malicious = {len(benign_train_df) / len(malicious_train_df)}')
+    train_data = train_data.sample(frac=1).reset_index(drop=True)
+    test_data = test_data.sample(frac=1).reset_index(drop=True)
+    train_data.to_csv(train_file_path, index=None, header=None, mode='w')
+    test_data.to_csv(test_file_path, index=None, header=None, mode='w')

@@ -181,7 +181,7 @@ if __name__ == '__main__':
     else:
         input_flag = sys.argv[1]
     if int(input_flag) == 0:
-        # 如果哟参数
+        # 如果参数
         if not arg:
             initParam(arg, 0, 0)
         else:
@@ -231,11 +231,7 @@ if __name__ == '__main__':
         mit_lr = lr
         bbyb_lr = lr
         print(f"lr+{lr}")
-        # ann_lr = 0.0001
-        # cnn_lr = 0.0001
-        # lstm_lr = 0.0001
-        # mit_lr = 0.0001
-        # bbyb_lr = 0.0001
+
         optimizer_ann = torch.optim.SGD(params=model_ann.parameters(),
                                         lr=ann_lr)
         optimizer_cnn = torch.optim.SGD(params=model_cnn.parameters(),

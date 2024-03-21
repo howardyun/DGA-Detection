@@ -55,6 +55,7 @@ def Set_label_list_form_benign(root_csv_path, target_csv_path):
     :return:
     """
     csv_files = glob.glob(os.path.join(root_csv_path, '*.csv'))
+    print(csv_files)
     for file in csv_files:
         dataframe = pd.read_csv(file, header=None)
         # 提取域名和标签列，域名编码
@@ -135,11 +136,12 @@ def Set_label_list_form_malicious(root_csv_path_1, root_csv_path_2, target_csv_p
 
 
 if __name__ == '__main__':
-    # Set_label_list_form_benign(f'../data/Benign', f'../data/Benign_vec/Benign.csv')
-    Set_label_list_form_malicious(f'../data/DGA/2016-09-19-dgarchive_full',
-                                  f'../data/DGA/2020-06-19-dgarchive_full',
-                                  f'../data/DGA_vec/2016-09-19-dgarchive_full',
-                                  f'../data/DGA_vec/2020-06-19-dgarchive_full')
+    print(1)
+    Set_label_list_form_benign(f'../../data/Benign', f'../../data/Benign_vec/Benign.csv')
+    Set_label_list_form_malicious(f'../../data/DGA/2016-09-19-dgarchive_full',
+                                  f'../../data/DGA/2020-06-19-dgarchive_full',
+                                  f'../../data/DGA_vec/2016-09-19-dgarchive_full',
+                                  f'../../data/DGA_vec/2020-06-19-dgarchive_full')
     # SetLabel(f'../data/DGA/2020-06-19-dgarchive_full', False)
 
     pass

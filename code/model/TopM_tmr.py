@@ -1,6 +1,21 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
+
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.encoding = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model))
+        self.encoding[:, 0::2] = torch.sin(position * div_term)
+        self.encoding[:, 1::2] = torch.cos(position * div_term)
+        self.encoding = self.encoding.unsqueeze(0)  # Add batch dimension
+
+    def forward(self, x):
+        return x + self.encoding[:, :x.size(1)]
 
 
 class TopMAttention(nn.Module):
@@ -75,8 +90,9 @@ class TransformerBlock(nn.Module):
 class DGAAttentionModel(nn.Module):
     def __init__(self, embed_size, heads, m_value, num_classes, forward_expansion, num_layers, max_length):
         super(DGAAttentionModel, self).__init__()
+        self.embed_size = embed_size
         self.word_embedding = nn.Embedding(max_length, embed_size)
-        self.position_embedding = nn.Embedding(max_length, embed_size)
+        self.position_encoding = PositionalEncoding(embed_size, max_length)
         self.layers = nn.ModuleList([
             TransformerBlock(embed_size, heads, m_value, forward_expansion)
             for _ in range(num_layers)
