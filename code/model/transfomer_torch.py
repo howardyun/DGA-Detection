@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from code.DGADataset import DGATrueDataset, DGAFalseDataset
+dcfrom DGADataset import DGATrueDataset, DGAFalseDataset
 from utils.engine import train
 
 NUM_EPOCHS = 5
@@ -18,17 +18,21 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 class TransformerModel(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim, num_layers, num_heads):
         super(TransformerModel, self).__init__()
+        # Embedding layer
         self.embedding = nn.Embedding(input_dim, hidden_dim)
+        # Transformer Encoder
         self.transformer = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(hidden_dim, num_heads),
+            nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=num_heads, batch_first=True),
             num_layers
         )
+        # Fully connected layer
         self.fc = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
-        embedded = self.embedding(x)
-        transformed = self.transformer(embedded)
-        output = self.fc(transformed.mean(dim=1))
+        # Input x shape expected: [batch_size, seq_length]
+        embedded = self.embedding(x)  # Output shape: [batch_size, seq_length, hidden_dim]
+        transformed = self.transformer(embedded)  # Output shape: [batch_size, seq_length, hidden_dim]
+        output = self.fc(transformed.mean(dim=1))  # Output shape: [batch_size, output_dim]
         return output
 
 
