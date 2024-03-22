@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch.utils.data import Dataset
 import pandas as pd
@@ -20,15 +22,33 @@ elements = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'
 # 处理字母转数字
 def AlpMapDigits(source_str):
     max_length = 255
+    # # 创建字符到下标的映射字典
+    # char_to_index = {char: index + 1 for index, char in enumerate(elements)}
+    # # 将字符串中的每个字符映射成数组的下标
+    # mapped_indices = [char_to_index[char] for char in source_str]
+    # 填充零--向前
+    # zero_num = max_length - len(mapped_indices)
+    # for i in range(zero_num):
+    #     mapped_indices.insert(0, 0)
+    #     pass
+
+    # 填充零--向后
+    # zero_num = max_length - len(mapped_indices)
+    # for i in range(zero_num):
+    #     mapped_indices.append(0)  # 向后填充0
+    #     pass
+
+    max_length = 255
     # 创建字符到下标的映射字典
-    char_to_index = {char: index for index, char in enumerate(elements)}
+    char_to_index = {char: index + 1 for index, char in enumerate(elements)}
     # 将字符串中的每个字符映射成数组的下标
     mapped_indices = [char_to_index[char] for char in source_str]
-    # 填充零
-    zero_num = max_length - len(mapped_indices)
-    for i in range(zero_num):
-        mapped_indices.insert(0, 0)
-        pass
+
+    # 如果字符串长度小于最大长度，则重复填充字符直到达到最大长度
+    if len(mapped_indices) < max_length:
+        repeat_count = math.ceil(max_length / len(mapped_indices))
+        mapped_indices = (mapped_indices * repeat_count)[:max_length]
+
     return mapped_indices
     pass
 
@@ -71,7 +91,11 @@ class DGATrueDataset_ysx(Dataset):
             dataframe = dataframe.iloc[:, 0:3]
             dataframe.columns = [0, 1, 2]
             # 逐一编码
+
             dataframe[0] = dataframe[0].apply(AlpMapDigits)
+            # print(dataframe[0][0])
+            # exit(1000)
+
             all_dataframe = pd.concat([all_dataframe, dataframe], ignore_index=True)
 
             # 获取第一列域名
@@ -131,4 +155,5 @@ class DGATrueDataset_ysx(Dataset):
         else:
             return len(self.test_data)
         pass
+
     pass

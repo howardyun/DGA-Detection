@@ -2,6 +2,8 @@ import torch
 import os
 from torch import nn
 import sys
+
+from model.transfomer_torch import DGAClassifier
 from utils.engine_ysx import train_ysx
 
 sys.path.append('model')
@@ -12,6 +14,8 @@ from model.mit.mit_torch import MITModel
 from model.ann.ann_torch import Net
 from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
 from model.transfomer_org import Transformer
+from model.transformer_lengthen import DGAClassifier_lenthen
+
 # from model.TopM_tmr import DGAAttentionModel
 
 # 所有工具类函数
@@ -201,14 +205,28 @@ if __name__ == '__main__':
         # model_transfomer = TransformerModel(255, 1, 256, 2, 4)
 
         # 确定训练模型
-        model_transfomer = Transformer(40, 4, 4, 1, 40, 255, 1)
+        input_vocab_size = 41  # Assuming ASCII + some special tokens
+        embed_size = 64
+        num_heads = 8
+        num_encoder_layers = 1
+        num_classes = 1  # Binary classification
 
+        model_transfomer = DGAClassifier(input_vocab_size, embed_size, num_heads, num_encoder_layers,
+                                                 num_classes)
+        # model_transfomer = Net(255, 255, 255)
+        # model_transfomer = CNNModel(255, 255, 255, 5)
+
+        # model_transfomer = LSTMModel(255, 255)
+        # model_transfomer = MITModel(255, 255)
+        # model_transfomer = BilBoHybridModel(255, 255, 5)
         # 二分类函数损失函数和优化器
-        # 定义二元交叉熵损失函数，并使用 pos_weight 参数
+        # 定义二元交叉熵损失函数，并使用 pos_weig000ht 参数
         # 正样本和负样本比例要按照数据集变化改变
         pos_weight = torch.tensor([pos_weight_num])
         pos_weight = pos_weight.to(device)
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        # loss_fn = nn.NLLLoss()
+
         # 模型优化器
         if not arg:
             transformer_lr = float(input("学习率"))
