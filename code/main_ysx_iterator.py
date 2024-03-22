@@ -2,7 +2,7 @@ import torch
 import os
 from torch import nn
 import sys
-from utils.engine_ysx import train_ysx
+from utils.engine_ysx import train_ysx, initResult
 
 sys.path.append('model')
 # 所有可用模型
@@ -108,6 +108,13 @@ def train_model(model, model_name, current_path, current_model_path, train_loss_
     """
     print(f"训练模型{model_name}开始")
     print(f"训练模型{model_name}, 学习率:{lr}")
+    # 训练结果和F1文件存放地址
+    current_path = str(current_path)
+    current_model_dir_path = current_path.replace(r"\record.csv", "")
+    current_model_F1_path = current_path.replace(r"\record.csv", r"\acc_pre_f1.csv")
+    initResult(str(lr) + f"{model_name}Model", current_model_dir_path, current_model_F1_path, test_file)
+
+    # 训练
     train_results = train_ysx(model=model,
                               train_file=train_file,
                               test_file=test_file,

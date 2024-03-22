@@ -79,7 +79,7 @@ def SavePredictionsResults(results: dict, lb_flag: bool):
     pass
 
 
-def SaveFilePath(lb_flag):
+def SaveFilePath(current_name: str, lb_flag: bool):
     """
     :param lb_flag:
     :return: 返回模型预测数据集时所有文件的存放地址
@@ -93,7 +93,13 @@ def SaveFilePath(lb_flag):
     second_dir_path.mkdir(parents=True, exist_ok=True)
 
     # 日期文件夹
-    third_dir = GetCurrentTime()
+    # 获取当前文件下总数
+    total = 0
+    for entry in second_dir_path.iterdir():
+        total += 1
+        pass
+    # 日期文件夹
+    third_dir = f"{total}_" + f"{current_name}_" + GetCurrentTime()
     third_dir_path = second_dir_path / third_dir
     third_dir_path.mkdir(parents=True, exist_ok=True)
 

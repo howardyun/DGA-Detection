@@ -1,12 +1,20 @@
+import os
 import sys
 import torch
-from utils.predictions import Predictions, SaveFilePath
+# 一些路径检查
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 添加utils包下所有py路径
+sys.path.append(current_dir.replace("Predict", "utils"))
+# 添加code包下所有py路径
+sys.path.append(current_dir.replace("\\Predict", ""))
+from predictions import Predictions, SaveFilePath
+from saveModel import LoadModel
 from model.cnn.cnn_torch import CNNModel
 from model.lstm.lstm_torch import LSTMModel
 from model.mit.mit_torch import MITModel
 from model.ann.ann_torch import Net
 from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
-from utils.saveModel import LoadModel
+
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 # 预测
@@ -40,13 +48,13 @@ def initPredictParam(args):
         if int(flag) == 1:
             print("使用全部数据")
             predict_full_data_flag = True
-            predict_file = '../../data/extract_remain_data/2016/predict.csv'
+            predict_file = '../data/extract_remain_data/2016/predict.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         else:
             print("使用部分数据")
             predict_full_data_flag = False
-            predict_file = '../../data/extract_remain_data/2016/predict.csv'
+            predict_file = '../data/extract_remain_data/2016/predict.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         pass
@@ -57,13 +65,13 @@ def initPredictParam(args):
         if int(flag) == 1:
             print("使用全部数据")
             predict_full_data_flag = True
-            predict_file = '../../data/test2016.csv'
+            predict_file = '../data/test2016.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         else:
             print("使用部分数据")
             predict_full_data_flag = False
-            predict_file = '../../data/test2016.csv'
+            predict_file = '../data/test2016.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         pass

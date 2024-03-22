@@ -1,5 +1,12 @@
 import sys
+import os
 import torch
+# 一些路径检查
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 添加utils包下所有py路径
+sys.path.append(current_dir.replace("Predict", "utils"))
+# 添加code包下所有py路径
+sys.path.append(current_dir.replace("\\Predict", ""))
 from model.cnn.cnn_torch import CNNModel
 from model.lstm.lstm_torch import LSTMModel
 from model.mit.mit_torch import MITModel
@@ -62,15 +69,15 @@ def initPredictParam(args):
             print("全数据集")
             # 两个都是True是因为训练集生产时已经时全数据集和部分数据集,不需要再用flag分割了,都全部读入即可
             predict_full_data_flag = True
-            # predict_file = '../data/lb_full_data/lb_predict2016.csv'
-            predict_file = '../data/train_partial2016.csv'
+            predict_file = '../data/lb_full_data/lb_predict2016.csv'
+            # predict_file = '../data/train_partial2016.csv'
             pass
         else:
             # 部分数据集
             print("部分数据集")
             predict_full_data_flag = True
-            # predict_file = '../data/lb_partial_data/lb_predict2016.csv'
-            predict_file = '../data/train_partial2016.csv'
+            predict_file = '../data/lb_partial_data/lb_predict2016.csv'
+            # predict_file = '../data/train_partial2016.csv'
             pass
         pass
     pass

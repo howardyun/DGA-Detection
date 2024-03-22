@@ -112,6 +112,7 @@ if __name__ == '__main__':
     current_path = SaveResultsPath(current_name, lb_flag, False)
     # 每个训练模型结果存放地址
     current_model_path = SaveModelPath("modelMultiPth", current_name, lb_flag, False)
+    print(current_name, current_path, current_model_path)
 
     # 抽取所有的可变参数,生成模型
     pair_list = sys.argv[3:]
