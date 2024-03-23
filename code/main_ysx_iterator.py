@@ -4,7 +4,7 @@ from torch import nn
 import sys
 
 from model.transformer_lengthen import TransformerModel
-from utils.engine_ysx import train_ysx, initResult
+from utils.engine_ysx import train_ysx
 
 sys.path.append('model')
 # 所有可用模型
@@ -46,6 +46,7 @@ mit_name = '0.001MITModel.pth'
 bbyb_name = '0.001BBYBModel.pth'
 transformer_name = '0.001TransformerModel.pth'
 
+
 def readData():
     pass
 
@@ -78,7 +79,6 @@ def initParam(arg, p1, p2):
         else:
             train_file = '../data/lb_partial_data/lb_train2016.csv'
             test_file = '../data/lb_partial_data/lb_test2016.csv'
-
             # train_file = '../data/train_partial2016.csv'
             # test_file = '../data/test_partial2016.csv'
 
@@ -115,11 +115,6 @@ def train_model(model, model_name, current_path, current_model_path, train_loss_
     """
     print(f"训练模型{model_name}开始")
     print(f"训练模型{model_name}, 学习率:{lr}")
-    # 训练结果和F1文件存放地址
-    current_path = str(current_path)
-    current_model_dir_path = current_path.replace(r"/record.csv", "")
-    current_model_F1_path = current_path.replace(r"/record.csv", r"/acc_pre_f1.csv")
-    initResult(str(lr) + f"{model_name}Model", current_model_dir_path, current_model_F1_path, test_file)
 
     # 训练
     train_results = train_ysx(model=model,
@@ -197,10 +192,9 @@ if __name__ == '__main__':
                                         dim_feedforward=256,
                                         dropout=0.1)
 
-
     # 生成列表
-    model_name_list = ['ANN', 'CNN', 'LSTM', 'MIT', 'BBYB','Transformer']
-    model_list = [model_ann, model_cnn, model_lstm, model_mit, model_bbyb,model_transfomer]
+    model_name_list = ['ANN', 'CNN', 'LSTM', 'MIT', 'BBYB', 'Transformer']
+    model_list = [model_ann, model_cnn, model_lstm, model_mit, model_bbyb, model_transfomer]
 
     # 获取参数输入的pos_weight
     pos_weight_num = float(sys.argv[5])
@@ -234,7 +228,7 @@ if __name__ == '__main__':
         # 优化器
         # pair_optimizer = torch.optim.SGD(params=current_model.parameters(), lr=current_lr)
         pair_optimizer = torch.optim.AdamW(params=model_transfomer.parameters(),
-                          lr=current_lr)
+                                           lr=current_lr)
         # 训练模型函数
         train_model(current_model, current_model_name, current_path, current_model_path, loss_fn, current_lr,
                     pair_optimizer)

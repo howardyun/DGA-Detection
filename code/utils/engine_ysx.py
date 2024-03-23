@@ -86,96 +86,6 @@ global_target_dir = ""
 global_acc_pre_f1_file_path = ""
 
 
-def initResult(init_model_name: str, init_target_dir: str, init_acc_pre_f1_file_path: str, init_test_file: str):
-    """
-    # 初始化全局变量
-    :return:
-    """
-    global global_model_name, global_test_file, global_target_dir, global_acc_pre_f1_file_path
-    global_model_name = init_model_name
-    global_test_file = init_test_file
-    global_target_dir = init_target_dir
-    global_acc_pre_f1_file_path = init_acc_pre_f1_file_path
-    pass
-
-
-def SaveResults(save_model_name, y, label, target_path):
-    """
-    存放训练结果
-    """
-    # 每个模型预测结果文件路径
-    file_path = str(target_path) + '/' + save_model_name + '.csv'
-    # 写入文件
-    if not Path(file_path).exists():
-        with open(str(file_path), mode='w', newline="") as csvfile:
-            pass
-        pass
-    # 判断文件大小
-    if os.path.getsize(file_path) == 0:
-        # 写入标题
-        df = pd.DataFrame(columns=['label', save_model_name], index=None)
-        df.to_csv(file_path, index=False)
-        # 不使用pandas进行插入,高内存低io,用csv插入,低内存高io
-        for y, label in zip(y, label):
-            row_item = [y.item(), label.item()]
-            with open(str(file_path), mode='a', newline="", errors='ignore') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(row_item)
-                pass
-            pass
-        pass
-    else:
-        for y, label in zip(y, label):
-            row_item = [y.item(), label.item()]
-            with open(str(file_path), mode='a', newline="", errors='ignore') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(row_item)
-                pass
-            pass
-        pass
-    return file_path
-    pass
-
-
-def SaveAccPreF1(epoch: int, model_name: str, data_file_path: str, results_path: str, acc_pre_f1_path: str):
-    # 不存在建立文件
-    if not Path(acc_pre_f1_path).exists():
-        with open(str(acc_pre_f1_path), mode='w', newline="") as csvfile:
-            # 写入标题
-            csv_title = ['model_name', 'epoch', 'file_name', 'model_accuracy', 'model_precision', 'model_recall',
-                         'model_f1']
-            with open(str(acc_pre_f1_path), mode='a', newline="") as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(csv_title)
-                pass
-            pass
-        pass
-
-    # 数据帧
-    # 计算准确率精准率f1
-    df = pd.read_csv(results_path)
-    # 变成tensor
-    tensor_label = torch.tensor(df['label'].to_numpy())
-    tensor_pred = torch.tensor(df[model_name].to_numpy())
-    # 用sklearn库直接计算
-    accuracy = accuracy_score(tensor_label, tensor_pred)
-    precision = precision_score(tensor_label, tensor_pred, zero_division=0)
-    recall = recall_score(tensor_label, tensor_pred, zero_division=0)
-    f1 = f1_score(tensor_label, tensor_pred, zero_division=0)
-
-    # 写入
-    csv_item = [model_name, f"epoch: {epoch + 1}", data_file_path, accuracy, precision, recall, f1]
-    with open(str(acc_pre_f1_path), mode='a', newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        # 写入一行数据
-        writer.writerow(csv_item)
-        pass
-    # 清空当前结果文件
-    with open(str(results_path), mode='w', newline="") as csvfile:
-        pass
-    pass
-
-
 # 单步模型测试函数
 def test_step(model: torch.nn.Module,
               dataloader: torch.utils.data.DataLoader,
@@ -191,6 +101,8 @@ def test_step(model: torch.nn.Module,
     model.eval()
 
     test_loss, test_acc = 0, 0
+    # 准确率等
+    accuracy, precision, recall, f1 = 0, 0, 0, 0,
     results_path = ""
 
     with torch.inference_mode():
@@ -213,19 +125,23 @@ def test_step(model: torch.nn.Module,
             # 这里没再次sigmoid，模型中已经激化过
             # 二分类训练计算
             test_label = torch.round(test_pred_logits)
-            test_acc += torch.eq(test_label, y).sum().item() / len(test_label)
-
-            # 写入结果
-            if global_model_name and global_target_dir:
-                results_path = SaveResults(save_model_name=global_model_name, y=y.cpu(), label=test_label.cpu(),
-                                           target_path=global_target_dir)
-                pass
+            # 调整计算
+            y, test_label = y.cpu().detach().numpy(), test_label.cpu().detach().numpy()
+            # 用sklearn库直接计算
+            accuracy += accuracy_score(y, test_label)
+            precision += precision_score(y, test_label, zero_division=0)
+            recall += recall_score(y, test_label, zero_division=0)
+            f1 += f1_score(y, test_label, zero_division=0)
             pass
         pass
 
     test_loss = test_loss / len(dataloader)
-    test_acc = test_acc / len(dataloader)
-    return test_loss, test_acc, results_path
+    # 准确率
+    test_acc = accuracy / len(dataloader)
+    test_pre = precision / len(dataloader)
+    test_rec = recall / len(dataloader)
+    test_f1 = f1 / len(dataloader)
+    return test_loss, test_acc, test_pre, test_rec, test_f1
     pass
 
 
@@ -253,13 +169,16 @@ def train_ysx(model: torch.nn.Module,
     results = {"train_loss": [],
                "train_acc": [],
                "test_loss": [],
-               "test_acc": []
+               "test_acc": [],
+               "test_precision": [],
+               "test_recall": [],
+               "test_f1": []
                }
 
     # 设备无关代码
     model.to(device)
     train_loss, train_acc = 0, 0
-    test_loss, test_acc = 0, 0
+    test_loss, test_acc, test_precision, test_recall, test_f1 = 0, 0, 0, 0, 0
     # 循环训练
     for epoch in tqdm(range(epochs)):
         # 优化训练集和测试集读取，都采用迭代器读取，原因是全数据训练集四千万+，测试集一千万+
@@ -282,17 +201,10 @@ def train_ysx(model: torch.nn.Module,
         for data_chunk in test_data_iterator:
             test_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取测试数据
-            test_loss, test_acc, results_path = test_step(model=model,
-                                                          dataloader=test_loader,
-                                                          loss_fn=loss_fn,
-                                                          device=device)
-            # 计算最终结果
-            # 一个模型预测结果
-            if global_model_name and global_target_dir:
-                SaveAccPreF1(epoch=epoch, model_name=global_model_name, data_file_path=global_test_file,
-                             results_path=results_path,
-                             acc_pre_f1_path=global_acc_pre_f1_file_path)
-                pass
+            test_loss, test_acc, test_precision, test_recall, test_f1 = test_step(model=model,
+                                                                                  dataloader=test_loader,
+                                                                                  loss_fn=loss_fn,
+                                                                                  device=device)
             pass
         # 每轮信息
         print(
@@ -307,6 +219,9 @@ def train_ysx(model: torch.nn.Module,
         results["train_acc"].append(train_acc)
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
+        results["test_precision"].append(test_precision)
+        results["test_recall"].append(test_recall)
+        results["test_f1"].append(test_f1)
         pass
 
     # 返回最终数据

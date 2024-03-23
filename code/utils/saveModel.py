@@ -137,17 +137,21 @@ def SaveResults(model_name: str, model_epoch: int, results: dict, csv_file_path:
         pass
 
     # 写入标题
-    csv_title = [model_name, "train_loss", "train_acc", "test_loss", "test_acc"]
+    csv_title = [model_name, "train_loss", "train_acc", "test_loss", "test_acc", 'test_precision', 'test_recall',
+                 'test_f1']
     with open(str(csv_file_path), mode='a', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(csv_title)
         pass
 
     # 写入一行数据
-    train_loss, train_acc, test_loss, test_acc = results['train_loss'], results['train_acc'], results['test_loss'], \
-        results['test_acc']
+    train_loss, train_acc, test_loss, test_acc, test_precision, test_recall, test_f1 = results['train_loss'], results[
+        'train_acc'], results['test_loss'], \
+        results['test_acc'], results['test_precision'], results['test_recall'], results['test_f1']
     for index in range(model_epoch):
-        csv_item = [f"epoch: {index + 1}", train_loss[index], train_acc[index], test_loss[index], test_acc[index]]
+        # 一行数据
+        csv_item = [f"epoch: {index + 1}", train_loss[index], train_acc[index], test_loss[index], test_acc[index],
+                    test_precision[index], test_recall[index], test_f1[index]]
         with open(str(csv_file_path), mode='a', newline="") as csvfile:
             writer = csv.writer(csvfile)
             # 写入一行数据
