@@ -1,50 +1,72 @@
-import math
-
+# 定义Transformer模型
 import torch
 import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
+# 定义PositionalEncoding
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, dropout, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
 
-class DGAClassifier_lenthen(nn.Module):
-    def __init__(self, input_vocab_size, embed_size, num_heads, num_encoder_layers, num_classes, max_len=255):
-        super(DGAClassifier_lenthen, self).__init__()
-        self.embed_size = embed_size
-        self.max_len = max_len
-        self.embedding = nn.Embedding(input_vocab_size, embed_size)
-        self.positional_encoding = self._generate_positional_encoding(max_len, embed_size)
+        # pe的维度(位置编码最大长度，模型维度)
+        pe = torch.zeros(max_len, d_model)
+        # 维度为（max_len, 1）：先在[0,max_len]中取max_len个整数，再加一个维度
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        # 位置编码的除数项：10000^(2i/d_model)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
+        # sin负责奇数；cos负责偶数
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_size, nhead=num_heads)
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
-
-        self.fc_out = nn.Linear(embed_size, num_classes)
-
-    def _generate_positional_encoding(self, max_len, embed_size):
-        position = torch.arange(0, max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, embed_size, 2) * -(math.log(10000.0) / embed_size))
-        positional_encoding = torch.zeros(max_len, embed_size)
-        positional_encoding[:, 0::2] = torch.sin(position * div_term)
-        positional_encoding[:, 1::2] = torch.cos(position * div_term)
-        return positional_encoding
+        # 维度变换：(max_len,d_model)→(1,max_len,d_model)→(max_len,1,d_model)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        # 将pe注册为模型缓冲区
+        self.register_buffer('pe', pe)
 
     def forward(self, x):
-        # 获取嵌入向量
-        embeddings = self.embedding(x)
+        # 取pe的前x.size(0)行，即
+        # (x.size(0),1,d_model) → (x.size(0),d_model)，拼接到x上
+        x = x + self.pe[:x.size(0), :]
+        return self.dropout(x)
 
-        # 添加位置编码
-        positional_encoding = self.positional_encoding[:x.size(1), :].unsqueeze(0)
-        embeddings = embeddings + positional_encoding
+class TransformerModel(nn.Module):
+    def __init__(self, input_dim, output_dim, d_model, nhead, num_layers, dim_feedforward, dropout):
+        super(TransformerModel, self).__init__()
+        # 创建一个线性变换层，维度input_dim4→d_model
+        self.embedding = nn.Embedding(input_dim, d_model)  # 使用嵌入层
+        # 生成pe
+        self.pos_encoder = PositionalEncoding(d_model, dropout)
+        # 生成一层encoder
+        encoder_layers = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward,
+                                                    dropout=dropout)
+        # 多层encoder
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=num_layers)
+        # 维度d_model→output_dim
+        self.fc = nn.Linear(d_model, output_dim)
+        self.d_model = d_model
 
-        # 生成填充掩码
-        src_mask = self.generate_square_subsequent_mask(x.size(1))
+    def forward(self, src):
+        src = src.permute(1, 0)
 
-        # 使用 nn.TransformerEncoder 实现变长注意力
-        transformer_output = self.transformer_encoder(embeddings, src_key_padding_mask=src_mask)
+        # 缩放
+        src = self.embedding(src) * np.sqrt(self.d_model)
 
-        # 取第一个 token 的输出
-        out = self.fc_out(transformer_output.mean(dim=0))  # 使用平均池化
+        # 加上位置嵌入
+        src = self.pos_encoder(src)
 
-        return out
+        output = self.transformer_encoder(src)
 
-    def generate_square_subsequent_mask(self, sz):
-        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-        return mask
+        # 调整输出形状为(batch, seq_len, d_model)
+        output = output.permute(1, 0, 2)
+        # 对所有位置的表示取平均
+        output = torch.mean(output, dim=1)
+        # 线性变换
+        output = self.fc(output)
+        # 使用sigmoid激活函数
+        output = torch.sigmoid(output)
+
+        return output

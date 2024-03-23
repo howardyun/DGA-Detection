@@ -14,7 +14,7 @@ from model.mit.mit_torch import MITModel
 from model.ann.ann_torch import Net
 from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
 from model.transfomer_org import Transformer
-from model.transformer_lengthen import DGAClassifier_lenthen
+from model.transformer_lengthen import TransformerModel
 
 # from model.TopM_tmr import DGAAttentionModel
 
@@ -93,6 +93,8 @@ def initParam(arg, p1, p2):
         else:
             train_file = '../data/MiniDataset/train.csv'
             test_file = '../data/MiniDataset/test.csv'
+            # train_file = '../data/testdata/train.csv'
+            # test_file = '../data/testdata/test.csv'
             pass
         pass
 
@@ -210,9 +212,15 @@ if __name__ == '__main__':
         num_heads = 8
         num_encoder_layers = 1
         num_classes = 1  # Binary classification
-
-        model_transfomer = DGAClassifier(input_vocab_size, embed_size, num_heads, num_encoder_layers,
-                                                 num_classes)
+        model_transfomer = TransformerModel(input_dim=255,
+                                            output_dim=1,
+                                            d_model=128,
+                                            nhead=4,
+                                            num_layers=1,
+                                            dim_feedforward=256,
+                                            dropout=0.1)
+        # model_transfomer = DGAClassifier(input_vocab_size, embed_size, num_heads, num_encoder_layers,
+        #                                          num_classes)
         # model_transfomer = Net(255, 255, 255)
         # model_transfomer = CNNModel(255, 255, 255, 5)
 

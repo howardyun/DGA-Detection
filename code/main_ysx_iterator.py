@@ -2,6 +2,8 @@ import torch
 import os
 from torch import nn
 import sys
+
+from model.transformer_lengthen import TransformerModel
 from utils.engine_ysx import train_ysx, initResult
 
 sys.path.append('model')
@@ -17,7 +19,7 @@ from utils.saveModel import SaveModel, SaveModelPath, SaveResults, SaveResultsPa
 # 训练模型参数
 # 按照数据集正负样本比例变化改变
 pos_weight_num = 0.0202
-NUM_EPOCHS = 5
+NUM_EPOCHS = 15
 BATCH_SIZE = 32
 NUM_WORKERS = os.cpu_count()
 # 训练设备
@@ -42,7 +44,7 @@ cnn_name = '0.001CNNModel.pth'
 lstm_name = '0.001LSTMModel.pth'
 mit_name = '0.001MITModel.pth'
 bbyb_name = '0.001BBYBModel.pth'
-
+transformer_name = '0.001TransformerModel.pth'
 
 def readData():
     pass
@@ -76,8 +78,10 @@ def initParam(arg, p1, p2):
         else:
             train_file = '../data/lb_partial_data/lb_train2016.csv'
             test_file = '../data/lb_partial_data/lb_test2016.csv'
+
             # train_file = '../data/train_partial2016.csv'
             # test_file = '../data/test_partial2016.csv'
+
             pass
         pass
     else:
@@ -97,6 +101,9 @@ def initParam(arg, p1, p2):
             test_file = '../data/extract_remain_data/2016/test.csv'
             # train_file = '../data/train_partial2016.csv'
             # test_file = '../data/test_partial2016.csv'
+            # train_file = '../data/MiniDataset/train.csv'
+            # test_file = '../data/MiniDataset/test.csv'
+
             pass
         pass
     pass
@@ -110,8 +117,8 @@ def train_model(model, model_name, current_path, current_model_path, train_loss_
     print(f"训练模型{model_name}, 学习率:{lr}")
     # 训练结果和F1文件存放地址
     current_path = str(current_path)
-    current_model_dir_path = current_path.replace(r"\record.csv", "")
-    current_model_F1_path = current_path.replace(r"\record.csv", r"\acc_pre_f1.csv")
+    current_model_dir_path = current_path.replace(r"/record.csv", "")
+    current_model_F1_path = current_path.replace(r"/record.csv", r"/acc_pre_f1.csv")
     initResult(str(lr) + f"{model_name}Model", current_model_dir_path, current_model_F1_path, test_file)
 
     # 训练
@@ -145,7 +152,7 @@ if __name__ == '__main__':
     # 参数3: "正常训练是否使用全数据集, 不是0, 是1"
     # 参数4: "pos_weight"
     # 剩余可变参数为学习率+训练模型的下标,例如训练0.1的ANN和0.01的CNN就输入0.1 0 0.01 1
-    # 模型下标为['ANN', 'CNN', 'LSTM', 'MIT', 'BBYB']
+    # 模型下标为['ANN', 'CNN', 'LSTM', 'MIT', 'BBYB','Transformer']
     arg = False
     print(sys.argv)
     if len(sys.argv) > 1:
@@ -182,9 +189,18 @@ if __name__ == '__main__':
     model_lstm = LSTMModel(255, 255)
     model_mit = MITModel(255, 255)
     model_bbyb = BilBoHybridModel(255, 255, 5)
+    model_transfomer = TransformerModel(input_dim=255,
+                                        output_dim=1,
+                                        d_model=128,
+                                        nhead=4,
+                                        num_layers=1,
+                                        dim_feedforward=256,
+                                        dropout=0.1)
+
+
     # 生成列表
-    model_name_list = ['ANN', 'CNN', 'LSTM', 'MIT', 'BBYB']
-    model_list = [model_ann, model_cnn, model_lstm, model_mit, model_bbyb]
+    model_name_list = ['ANN', 'CNN', 'LSTM', 'MIT', 'BBYB','Transformer']
+    model_list = [model_ann, model_cnn, model_lstm, model_mit, model_bbyb,model_transfomer]
 
     # 获取参数输入的pos_weight
     pos_weight_num = float(sys.argv[5])
@@ -216,7 +232,9 @@ if __name__ == '__main__':
         # 当前学习率
         current_lr = float(pair['lr'])
         # 优化器
-        pair_optimizer = torch.optim.SGD(params=current_model.parameters(), lr=current_lr)
+        # pair_optimizer = torch.optim.SGD(params=current_model.parameters(), lr=current_lr)
+        pair_optimizer = torch.optim.AdamW(params=model_transfomer.parameters(),
+                          lr=current_lr)
         # 训练模型函数
         train_model(current_model, current_model_name, current_path, current_model_path, loss_fn, current_lr,
                     pair_optimizer)
