@@ -170,6 +170,9 @@ def SaveAccPreF1(epoch: int, model_name: str, data_file_path: str, results_path:
         # 写入一行数据
         writer.writerow(csv_item)
         pass
+    # 清空当前结果文件
+    with open(str(results_path), mode='w', newline="") as csvfile:
+        pass
     pass
 
 
