@@ -3,7 +3,9 @@ from typing import Dict, List, Tuple
 import string
 from tqdm.auto import tqdm
 from DataIterator import MultiDataIterator
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from torch.utils.data import DataLoader
+
 
 def train_multi_step(model: torch.nn.Module,
                      dataloader: torch.utils.data.DataLoader,
@@ -68,7 +70,7 @@ def train_multi_step(model: torch.nn.Module,
 def test_multi_step(model: torch.nn.Module,
                     dataloader: torch.utils.data.DataLoader,
                     loss_fn: torch.nn.Module,
-                    device: torch.device) -> Tuple[float, float]:
+                    device: torch.device):
     """
     :param model: 要训练的pytorch模型
     :param dataloader: 训练模型dataLoader实例
@@ -79,6 +81,7 @@ def test_multi_step(model: torch.nn.Module,
     model.eval()
 
     test_loss, test_acc = 0, 0
+    accuracy, precision, recall, f1 = 0, 0, 0, 0
 
     with torch.inference_mode():
         for batch, (X, y) in enumerate(dataloader):
@@ -97,14 +100,23 @@ def test_multi_step(model: torch.nn.Module,
                 test_loss += loss.item()
                 pass
 
-            # 二分类训练计算
-            test_acc += torch.eq(test_pred_pred, y).sum().item() / len(test_pred_pred)
+            # 调整计算
+            y, test_pred_pred = y.cpu().detach().numpy(), test_pred_pred.cpu().detach().numpy()
+            # 多分类训练计算
+            accuracy += accuracy_score(y, test_pred_pred)
+            precision += precision_score(y, test_pred_pred, average='macro', zero_division=0)
+            recall += recall_score(y, test_pred_pred, average='macro', zero_division=0)
+            f1 += f1_score(y, test_pred_pred, average='macro', zero_division=0)
             pass
         pass
 
     test_loss = test_loss / len(dataloader)
-    test_acc = test_acc / len(dataloader)
-    return test_loss, test_acc
+    # 准确率
+    test_acc = accuracy / len(dataloader)
+    test_pre = precision / len(dataloader)
+    test_rec = recall / len(dataloader)
+    test_f1 = f1 / len(dataloader)
+    return test_loss, test_acc, test_pre, test_rec, test_f1
     pass
 
 
@@ -131,16 +143,19 @@ def train_multi(model: torch.nn.Module,
     results = {"train_loss": [],
                "train_acc": [],
                "test_loss": [],
-               "test_acc": []
+               "test_acc": [],
+               "test_precision": [],
+               "test_recall": [],
+               "test_f1": []
                }
 
     # 设备无关代码
     model.to(device)
-    train_loss, train_acc = 0, 0
-    test_loss, test_acc = 0, 0
 
     # 循环训练
     for epoch in tqdm(range(epochs)):
+        train_loss, train_acc = 0, 0
+        test_loss, test_acc, test_precision, test_recall, test_f1 = 0, 0, 0, 0, 0
         # 优化训练集和测试集读取，都采用迭代器读取，原因是全数据训练集四千万+，测试集一千万+
         # 最终迭代器步进因改为训练集一百万一次，测试集二十五万一次
         # 这个迭代器对象不可重置读取位置，只能重新创建充值读取位置
@@ -148,6 +163,8 @@ def train_multi(model: torch.nn.Module,
         test_data_iterator = MultiDataIterator(test_file, chunksize=250000)
 
         # 非全数据集总量是data_iter * 上面设置的chunsize
+        # 手动计算分块数量
+        train_chunk_num = 0
         for data_chunk in train_data_iterator:
             train_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取训练数据
@@ -156,16 +173,37 @@ def train_multi(model: torch.nn.Module,
                                                      loss_fn=loss_fn,
                                                      optimizer=optimizer,
                                                      device=device)
+            # 分块累计
+            train_chunk_num += 1
+            train_loss += train_loss
+            train_acc += train_acc
             pass
+        # 累计求平均值
+        train_loss = train_loss / train_chunk_num
+        train_acc = train_acc / train_chunk_num
+        # 手动计算分块数量
+        test_chunk_num = 0
         for data_chunk in test_data_iterator:
             test_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取测试数据
-            test_loss, test_acc = test_multi_step(model=model,
-                                                  dataloader=test_loader,
-                                                  loss_fn=loss_fn,
-                                                  device=device)
+            test_loss, test_acc, test_precision, test_recall, test_f1 = test_multi_step(model=model,
+                                                                                        dataloader=test_loader,
+                                                                                        loss_fn=loss_fn,
+                                                                                        device=device)
+            # 分块累计
+            test_chunk_num += 1
+            test_loss += test_loss
+            test_acc += test_acc
+            test_precision += test_precision
+            test_recall += test_recall
+            test_f1 += test_f1
             pass
-
+        # 累计平均
+        test_loss = test_loss / test_chunk_num
+        test_acc = test_acc / test_chunk_num
+        test_precision = test_precision / test_chunk_num
+        test_recall = test_recall / test_chunk_num
+        test_f1 = test_f1 / test_chunk_num
         # 每轮信息
         print(
             f"Epoch: {epoch + 1} | "
@@ -179,6 +217,9 @@ def train_multi(model: torch.nn.Module,
         results["train_acc"].append(train_acc)
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
+        results["test_precision"].append(test_precision)
+        results["test_recall"].append(test_recall)
+        results["test_f1"].append(test_f1)
         pass
 
     # 返回最终数据

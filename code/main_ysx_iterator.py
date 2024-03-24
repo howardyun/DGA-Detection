@@ -103,7 +103,6 @@ def initParam(arg, p1, p2):
             # test_file = '../data/test_partial2016.csv'
             # train_file = '../data/MiniDataset/train.csv'
             # test_file = '../data/MiniDataset/test.csv'
-
             pass
         pass
     pass
@@ -226,9 +225,9 @@ if __name__ == '__main__':
         # 当前学习率
         current_lr = float(pair['lr'])
         # 优化器
-        # pair_optimizer = torch.optim.SGD(params=current_model.parameters(), lr=current_lr)
-        pair_optimizer = torch.optim.AdamW(params=model_transfomer.parameters(),
-                                           lr=current_lr)
+        pair_optimizer = torch.optim.SGD(params=current_model.parameters(), lr=current_lr)
+        # pair_optimizer = torch.optim.AdamW(params=model_transfomer.parameters(),
+        #                                    lr=current_lr)
         # 训练模型函数
         train_model(current_model, current_model_name, current_path, current_model_path, loss_fn, current_lr,
                     pair_optimizer)

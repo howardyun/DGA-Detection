@@ -26,39 +26,43 @@ if __name__ == '__main__':
     columns_pic_path = ['picture/line_accuracy.png', 'picture/line_precision.png', 'picture/line_recall.png',
                         'picture/line_f1.png']
 
-    # print(dataframe_list[0].iloc[:, 0])
     for item in range(len(columns_list)):
         plt.figure(figsize=(15, 10))
+        fig, ax = plt.subplots(figsize=(15, 10))
         x = dataframe_list[0].iloc[:, 0].tolist()
         marker_list = ['o', '^', 's', 'd', '*']
         y_list = []
         for index in range(len(dataframe_list)):
             y = dataframe_list[index][columns_list[item]].tolist()
+            y = [float(num) for num in y]
             y_list = y_list + y
             # 绘制折线图并增加线条粗细
-            plt.plot(x, y, linewidth=2)
-            plt.plot(x, y, label=str(dataframe_list[index].columns[0]), marker=marker_list[index])
+            ax.plot(x, y, linewidth=2)
+            ax.plot(x, y, label=str(dataframe_list[index].columns[0]), marker=marker_list[index])
             pass
-
         # 计算 Y 轴刻度位置和标签
         y_min = min(y_list)
         y_max = max(y_list)
-        yticks_interval = 0.01  # 刻度间隔
+        yticks_interval = 0.1  # 刻度间隔
+        # 计算刻度位置
         yticks_positions = np.arange(np.floor(float(y_min) * 100) / 100,
-                                     np.ceil(float(y_min) * 100) / 100 + yticks_interval,
-                                     yticks_interval)  # 计算刻度位置
-        yticks_labels = [f"{i:.2f}" if (int(i * 100 % 5) == 0) else f"" for i in yticks_positions[:]]  # 生成刻度标签
+                                     np.ceil(float(y_max) * 100) / 100 + yticks_interval,
+                                     yticks_interval)
+        # 生成刻度标签
+        yticks_labels = [f"{i:.2f}" if (int(i * 100 % 5) == 0) else f"" for i in yticks_positions[:]]
         # 设置 Y 轴刻度
-        plt.yticks(yticks_positions, yticks_labels)
-
-        plt.grid()
-        # 添加图例
-        plt.legend()
+        ax.set_yticks(yticks_positions)
+        ax.set_yticklabels(yticks_labels)
+        # 网格线
+        ax.grid(True)
         # 添加标题和标签
-        plt.title(f'model {columns_y_labels[item]}')
-        plt.xlabel('Epoch', fontsize=14)
-        plt.ylabel(columns_y_labels[item], fontsize=14)
+        ax.set_title(f'model {columns_y_labels[item]}', fontsize=30)
+        ax.set_xlabel('Epoch', fontsize=30)
+        ax.set_ylabel(columns_y_labels[item], fontsize=30)
+        # 添加图例
+        ax.legend(loc='upper left')
         # 保存图像到当前文件夹
-        plt.savefig(columns_pic_path[item])
+        fig.savefig(columns_pic_path[item])
         plt.clf()
         pass
+    pass
