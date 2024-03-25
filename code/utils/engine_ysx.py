@@ -184,8 +184,8 @@ def train_ysx(model: torch.nn.Module,
         # 优化训练集和测试集读取，都采用迭代器读取，原因是全数据训练集四千万+，测试集一千万+
         # 最终迭代器步进因改为训练集一百万一次，测试集二十五万一次
         # 这个迭代器对象不可重置读取位置，只能重新创建充值读取位置
-        train_data_iterator = DataIterator(train_file, chunksize=1000000)
-        test_data_iterator = DataIterator(test_file, chunksize=250000)
+        train_data_iterator = DataIterator(train_file, chunksize=1000)
+        test_data_iterator = DataIterator(test_file, chunksize=250)
 
         # data_flag是True时全数据集，False时非全数据集
         # 非全数据集总量是data_iter * 上面设置的chunsize
@@ -194,15 +194,15 @@ def train_ysx(model: torch.nn.Module,
         for data_chunk in train_data_iterator:
             train_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取训练数据
-            train_loss, train_acc = train_step(model=model,
-                                               dataloader=train_loader,
-                                               loss_fn=loss_fn,
-                                               optimizer=optimizer,
-                                               device=device)
+            current_train_loss, current_train_acc = train_step(model=model,
+                                                               dataloader=train_loader,
+                                                               loss_fn=loss_fn,
+                                                               optimizer=optimizer,
+                                                               device=device)
             # 分块累计
             train_chunk_num += 1
-            train_loss += train_loss
-            train_acc += train_acc
+            train_loss += current_train_loss
+            train_acc += current_train_acc
             pass
         # 累计求平均值
         train_loss = train_loss / train_chunk_num
@@ -212,17 +212,18 @@ def train_ysx(model: torch.nn.Module,
         for data_chunk in test_data_iterator:
             test_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取测试数据
-            test_loss, test_acc, test_precision, test_recall, test_f1 = test_step(model=model,
-                                                                                  dataloader=test_loader,
-                                                                                  loss_fn=loss_fn,
-                                                                                  device=device)
+            current_test_loss, current_test_acc, current_test_precision, current_test_recall, current_test_f1 = test_step(
+                model=model,
+                dataloader=test_loader,
+                loss_fn=loss_fn,
+                device=device)
             # 分块累计
             test_chunk_num += 1
-            test_loss += test_loss
-            test_acc += test_acc
-            test_precision += test_precision
-            test_recall += test_recall
-            test_f1 += test_f1
+            test_loss += current_test_loss
+            test_acc += current_test_acc
+            test_precision += current_test_precision
+            test_recall += current_test_recall
+            test_f1 += current_test_f1
             pass
         # 累计平均
         test_loss = test_loss / test_chunk_num

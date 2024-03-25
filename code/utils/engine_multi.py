@@ -168,15 +168,15 @@ def train_multi(model: torch.nn.Module,
         for data_chunk in train_data_iterator:
             train_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取训练数据
-            train_loss, train_acc = train_multi_step(model=model,
-                                                     dataloader=train_loader,
-                                                     loss_fn=loss_fn,
-                                                     optimizer=optimizer,
-                                                     device=device)
+            current_train_loss, current_train_acc = train_multi_step(model=model,
+                                                                     dataloader=train_loader,
+                                                                     loss_fn=loss_fn,
+                                                                     optimizer=optimizer,
+                                                                     device=device)
             # 分块累计
             train_chunk_num += 1
-            train_loss += train_loss
-            train_acc += train_acc
+            train_loss += current_train_loss
+            train_acc += current_train_acc
             pass
         # 累计求平均值
         train_loss = train_loss / train_chunk_num
@@ -186,17 +186,18 @@ def train_multi(model: torch.nn.Module,
         for data_chunk in test_data_iterator:
             test_loader = DataLoader(data_chunk, batch_size=BATCH_SIZE, shuffle=True)
             # 获取测试数据
-            test_loss, test_acc, test_precision, test_recall, test_f1 = test_multi_step(model=model,
-                                                                                        dataloader=test_loader,
-                                                                                        loss_fn=loss_fn,
-                                                                                        device=device)
+            current_test_loss, current_test_acc, current_test_precision, current_test_recall, current_test_f1 = test_multi_step(
+                model=model,
+                dataloader=test_loader,
+                loss_fn=loss_fn,
+                device=device)
             # 分块累计
             test_chunk_num += 1
-            test_loss += test_loss
-            test_acc += test_acc
-            test_precision += test_precision
-            test_recall += test_recall
-            test_f1 += test_f1
+            test_loss += current_test_loss
+            test_acc += current_test_acc
+            test_precision += current_test_precision
+            test_recall += current_test_recall
+            test_f1 += current_test_f1
             pass
         # 累计平均
         test_loss = test_loss / test_chunk_num
