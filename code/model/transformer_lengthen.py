@@ -40,11 +40,15 @@ class TransformerModel(nn.Module):
         self.embedding = nn.Embedding(input_dim, d_model)  # 使用嵌入层
         # 生成pe
         self.pos_encoder = PositionalEncoding(d_model, dropout)
+
+
         # 生成一层encoder
         encoder_layers = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward,
                                                     dropout=dropout)
         # 多层encoder
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=num_layers)
+
+
         # 维度d_model→output_dim
         self.fc = nn.Linear(d_model, output_dim)
         self.d_model = d_model
