@@ -5,6 +5,8 @@ import os
 import glob
 import csv
 
+import torch
+
 elements = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
             'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.', '@', '%']
 
@@ -279,12 +281,13 @@ def extract_data(benign_root_csv_path, malicious_root_csv_path, year):
     pass
 
 
-def remain_data(benign_root_csv_path, malicious_root_csv_path, year):
+def remain_data(benign_root_csv_path, malicious_root_csv_path, year, pencentage=1.0):
     """
     读取剩余到的40%数据作为预测集
     :param benign_root_csv_path: 良性训练集
     :param malicious_root_csv_path: 恶性训练集
     :param year: 年份，2016还是2020
+    :param pencentage: 抽取的比例
     """
     # 创建文件夹
     target_dir = "../../data/extract_remain_data/" + year
@@ -299,24 +302,34 @@ def remain_data(benign_root_csv_path, malicious_root_csv_path, year):
     csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
     # 数据帧
     for file in csv_files_benign:
-        predict_df = pd.concat([predict_df, pd.read_csv(file, header=None)], ignore_index=True)
+        item_df = pd.read_csv(file, header=None)
+        # 按比例抽取
+        item_size = int(len(item_df) * pencentage)
+        extract_df = item_df.sample(n=item_size)
+        # 拼接
+        predict_df = pd.concat([predict_df, extract_df], ignore_index=True)
         pass
     for file in csv_files_malicious:
-        predict_df = pd.concat([predict_df, pd.read_csv(file, header=None)], ignore_index=True)
+        item_df = pd.read_csv(file, header=None)
+        item_size = int(len(item_df) * pencentage)
+        extract_df = item_df.sample(n=item_size)
+        predict_df = pd.concat([predict_df, extract_df], ignore_index=True)
         pass
 
     # 打乱
     predict_df = predict_df.sample(frac=1).reset_index(drop=True)
+    print(f"predict size: {len(predict_df)}")
     predict_df.to_csv(predict_file_path, index=None, header=None, mode='w')
     pass
 
 
-def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
+def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year, pencentage=1.0):
     """
     读取抽取到的60%数据,分割80%作为训练集,20%作为测试集
     :param benign_root_csv_path: 良性训练集
     :param malicious_root_csv_path: 恶性训练集
     :param year: 年份，2016还是2020
+    :param pencentage: 三千万数据比例,0.5就是提取一千五百万
     :return:
     """
     # 创建文件夹
@@ -327,6 +340,8 @@ def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
     # 保存文件路径
     train_file_path = "../../data/extract_remain_data/" + year + "/train.csv"
     test_file_path = "../../data/extract_remain_data/" + year + "/test.csv"
+    # 最小数据集数据量
+    limit = 10
 
     benign_df = pd.DataFrame()
     malicious_df = pd.DataFrame()
@@ -335,12 +350,23 @@ def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
     csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
     # 数据帧
     for file in csv_files_benign:
-        benign_df = pd.concat([benign_df, pd.read_csv(file, header=None)], ignore_index=True)
+        item_df = pd.read_csv(file, header=None)
+        train_test_size = int(len(item_df) * pencentage)
+        train_test_df = item_df.sample(n=train_test_size)
+        # 拼接
+        benign_df = pd.concat([benign_df, train_test_df], ignore_index=True)
         pass
     for file in csv_files_malicious:
-        malicious_df = pd.concat([malicious_df, pd.read_csv(file, header=None)], ignore_index=True)
+        item_df = pd.read_csv(file, header=None)
+        train_test_size = int(len(item_df) * pencentage)
+        if train_test_size <= limit:
+            train_test_df = item_df
+            pass
+        else:
+            train_test_df = item_df.sample(n=train_test_size)
+            pass
+        malicious_df = pd.concat([malicious_df, train_test_df], ignore_index=True)
         pass
-
     # 防止抽取时抽取出聚块的数据
     benign_df = benign_df.sample(frac=1).reset_index(drop=True)
     malicious_df = malicious_df.sample(frac=1).reset_index(drop=True)
@@ -354,7 +380,9 @@ def extract_remain_data(benign_root_csv_path, malicious_root_csv_path, year):
     # 组合训练集和测试集数据
     train_data = pd.concat([benign_train_df, malicious_train_df], ignore_index=True)
     test_data = pd.concat([benign_test_df, malicious_test_df], ignore_index=True)
-    print(f'pos weight: benign / malicious = {len(benign_train_df) / len(malicious_train_df)}')
+    print(
+        f'train benign size: {len(benign_train_df)}, train malicious size: {len(malicious_train_df)}, pos weight: benign / malicious = {len(benign_train_df) / len(malicious_train_df)}')
+    print(f'train size: {len(train_data)}, test size: {len(test_data)}')
     train_data = train_data.sample(frac=1).reset_index(drop=True)
     test_data = test_data.sample(frac=1).reset_index(drop=True)
     train_data.to_csv(train_file_path, index=None, header=None, mode='w')
@@ -393,6 +421,50 @@ def csv_write_row(src_file, text1, text2, array1, array2):
             writer.writerow([array2[i]])
             pass
         pass
+    pass
+
+
+def lb_data_generate_predict_percentage(benign_root_csv_path, malicious_root_csv_path, year='2016', percentage=1.0):
+    """
+    按比例生成预测集数据
+    :param benign_root_csv_path:
+    :param malicious_root_csv_path:
+    :param year:
+    :param percentage:
+    :return:
+    """
+    predict_target_dir = '../../data/lb_predict_data/'
+    if not os.path.exists(predict_target_dir):
+        os.makedirs(predict_target_dir, exist_ok=True)
+        pass
+    # 全部文件数组
+    csv_files_benign = glob.glob(os.path.join(benign_root_csv_path, '*.csv'))
+    csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
+
+    # 随机获取恶性数据文件数组的一半数据
+    # 打乱数组
+    # random.shuffle(csv_files_malicious)
+    # 获取分成两半的恶性数据文件数组
+    split_index = len(csv_files_malicious) // 2
+    # 测试训练文件名数组
+    first_half = csv_files_malicious[:split_index]
+    # 预测文件名数组
+    second_half = csv_files_malicious[split_index:]
+
+    # 组合鲁棒性预测数据
+    lb_predict = pd.DataFrame()
+    for file in second_half:
+        item_df = pd.read_csv(file, header=None)
+        predict_df_size = int(len(item_df) * percentage)
+        predict_df = item_df.sample(n=predict_df_size)
+        lb_predict = pd.concat([lb_predict, predict_df], ignore_index=True)
+        pass
+    # 无需分割和拼接,需要打乱数据帧
+    predict_df = lb_predict.sample(frac=1).reset_index(drop=True)
+    print(f"predict_df_size: {len(predict_df)}")
+    # 写入csv
+    predict_df.to_csv(predict_target_dir + 'lb_predict_' + year + '.csv', index=None, header=None, mode='w')
+    pass
     pass
 
 
@@ -516,6 +588,158 @@ def lb_data_generate_train_test(benign_root_csv_path, malicious_root_csv_path, y
     pass
 
 
+def multi_label(csv_path: str):
+    """
+    计算多分类中每一个标签的权重
+    :param csv_path:
+    :return:
+    """
+    # 数据帧
+    target_df = pd.read_csv(csv_path, header=None)
+    # 转换为numpy数组
+    targets = target_df[2].to_numpy()
+    # 每个类别的样本数量
+    class_counts = torch.bincount(torch.tensor(targets))
+    # class_proportions = class_counts / class_counts.sum()
+    # # 将类别转化为权重
+    # class_weights = class_proportions / class_proportions.sum()
+    # 计算每个类别的样本数量的倒数作为权重
+    class_weights = 1.0 / class_counts
+    normalized_weights = class_weights / class_weights.sum()
+    print("class_weights:", normalized_weights)
+    print("shape", normalized_weights.shape)
+    return normalized_weights
+    pass
+
+
+def multi_data(benign_root_csv_path, malicious_root_csv_path, year, pencentage=1.0):
+    """
+    :param benign_root_csv_path:  良性数据集目录
+    :param malicious_root_csv_path:  恶性数据集目录
+    :param year: 年份
+    :param pencentage: 数据比例
+    :return:
+    """
+    target_dir = '../../data/multi_data/' + year + '/'
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir, exist_ok=True)
+        pass
+    # 保存文件路径
+    train_file_path = target_dir + 'train.csv'
+    test_file_path = target_dir + 'test.csv'
+    predict_file_path = target_dir + 'predict.csv'
+    # 数据帧最少抽取的数量
+    limit = 10
+
+    # 三个数据帧,不在生成临时文件,直接抽取
+    benign_final_df = pd.DataFrame()
+    malicious_final_df = pd.DataFrame()
+    predict_final_df = pd.DataFrame()
+
+    benign_train_df = pd.DataFrame()
+    benign_test_df = pd.DataFrame()
+    malicious_train_df = pd.DataFrame()
+    malicious_test_df = pd.DataFrame()
+    # 全部文件数组
+    csv_files_benign = glob.glob(os.path.join(benign_root_csv_path, '*.csv'))
+    csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
+    # 构建数据帧
+    for file in csv_files_benign:
+        # 读取数据形成数据帧,获取每个文件大小
+        # 训练测试集抽取pencentage
+        item_df = pd.read_csv(file, header=None)
+        train_test_size = int(len(item_df) * pencentage)
+        train_test_df = item_df.sample(n=train_test_size)
+        # 拼接
+        split_index = int(0.8 * len(train_test_df))
+        train_df = train_test_df[:split_index]
+        test_df = train_test_df[split_index:]
+        benign_train_df = pd.concat([benign_train_df, train_df], ignore_index=True)
+        benign_test_df = pd.concat([benign_test_df, test_df], ignore_index=True)
+        # benign_final_df = pd.concat([benign_final_df, train_test_df], ignore_index=True)
+
+        # 从剩下部分抽取pencentage
+        remain_df = item_df.drop(train_test_df.index)
+        predict_size = int(len(remain_df) * pencentage)
+        predict_df = remain_df.sample(n=predict_size)
+        # 拼接
+        predict_final_df = pd.concat([predict_final_df, predict_df], ignore_index=True)
+        pass
+    for file in csv_files_malicious:
+        # 读取数据形成数据帧,获取每个文件大小
+        # 训练集和测试集从每个文件抽取pencentage,预测集抽取剩下数据中的pencentage
+        item_df = pd.read_csv(file, header=None)
+        train_test_size = int(len(item_df) * pencentage)
+        # 抽取训练集和测试集
+        train_test_df = item_df.sample(n=train_test_size)
+        # 拼接
+        # split_index = int(0.8 * len(train_test_df))
+        # 只有数据帧总数大于1的时候才实现分割，否则就是抽取相同的一个
+        if train_test_size <= limit:
+            # 低于最小情况就不抽取数据
+            train_df = item_df
+            test_df = item_df
+            pass
+        else:
+            # 否则，才进行抽取
+            split_index = int(0.8 * len(train_test_df))
+            train_df = train_test_df[:split_index]
+            test_df = train_test_df[split_index:]
+            pass
+        malicious_train_df = pd.concat([malicious_train_df, train_df], ignore_index=True)
+        malicious_test_df = pd.concat([malicious_test_df, test_df], ignore_index=True)
+
+        # 剥离前面这些数据
+        remain_df = item_df.drop(train_test_df.index)
+        predict_size = int(len(remain_df) * pencentage)
+        if predict_size < limit:
+            # 少于最小值的时候就不抽取
+            predict_df = item_df
+            pass
+        else:
+            # 否则，开始抽取
+            # 从剩下数据中再抽pencentage作为预测数据
+            predict_df = remain_df.sample(n=predict_size)
+            pass
+
+        # 拼接数据
+        predict_final_df = pd.concat([predict_final_df, predict_df], ignore_index=True)
+        if len(train_df) == 0 or len(test_df) == 0 or len(predict_df) == 0:
+            print("file-->malicious train and test, predict:", file, len(train_df), len(test_df), len(predict_df))
+            pass
+        pass
+
+    # # 防止抽取时抽取出聚块的数据
+    # benign_final_df = benign_final_df.sample(frac=1).reset_index(drop=True)
+    # malicious_final_df = malicious_final_df.sample(frac=1).reset_index(drop=True)
+    # # 测试训练集八二分割
+    # split_index = int(0.8 * len(benign_final_df))
+    # benign_train_df = benign_final_df[:split_index]
+    # benign_test_df = benign_final_df[split_index:]
+    # split_index = int(0.8 * len(malicious_final_df))
+    # malicious_train_df = malicious_final_df[:split_index]
+    # malicious_test_df = malicious_final_df[split_index:]
+
+    # 组合训练测试集数据
+    train_data = pd.concat([benign_train_df, malicious_train_df], ignore_index=True)
+    test_data = pd.concat([benign_test_df, malicious_test_df], ignore_index=True)
+    print(f'train benign size: {len(benign_train_df)}, train malicious size: {len(malicious_train_df)}')
+    print(f'train size: {len(train_data)}, test size: {len(test_data)}')
+    # 打乱
+    train_data = train_data.sample(frac=1).reset_index(drop=True)
+    test_data = test_data.sample(frac=1).reset_index(drop=True)
+    # 生成文件
+    train_data.to_csv(train_file_path, index=None, header=None, mode='w')
+    test_data.to_csv(test_file_path, index=None, header=None, mode='w')
+
+    # 预测集,不用组合
+    # 打乱
+    predict_data = predict_final_df.sample(frac=1).reset_index(drop=True)
+    print(f'predict size: {len(predict_data)}')
+    predict_data.to_csv(predict_file_path, index=None, header=None, mode='w')
+    pass
+
+
 if __name__ == '__main__':
     # 给良性数据集打标签
     # Set_label_list_form_benign(f'../../data/Benign', f'../../data/Benign_vec/Benign.csv')
@@ -533,18 +757,58 @@ if __name__ == '__main__':
     #                              f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', False)
 
     # 随机抽取60 % 剩余40 % 数据
-    extract_data(f'../../data/Benign_vec',
-                 f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016')
+    # extract_data(f'../../data/Benign_vec',
+    #              f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016')
+
     # # 生成抽取后的预测数据
-    remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
-                f'../../data/extract_remain_data/2016/malicious/extract', '2016')
+    # 两千万
+    # remain_data(f'../../data/extract_remain_data/2016/benign/remain/',
+    #             f'../../data/extract_remain_data/2016/malicious/remain', '2016')
+    # 一千万
+    # remain_data(f'../../data/extract_remain_data/2016/benign/remain/',
+    #             f'../../data/extract_remain_data/2016/malicious/remain', '2016_10000000', 0.5)
+    # 五百万
+    # remain_data(f'../../data/extract_remain_data/2016/benign/remain/',
+    #             f'../../data/extract_remain_data/2016/malicious/remain', '2016_5000000', 0.25)
+    # 一百万
+    # remain_data(f'../../data/extract_remain_data/2016/benign/remain/',
+    #             f'../../data/extract_remain_data/2016/malicious/remain', '2016_1000000', 0.05)
+
     # # 生成抽取后的训练测试数据
-    extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
-                        f'../../data/extract_remain_data/2016/malicious/extract', '2016')
+    # 这里抽取后的源数据集是三千万级别,生成比例需要根据三千万进行调整
+    # 三千万
+    # extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
+    #                     f'../../data/extract_remain_data/2016/malicious/extract', '2016')
+    # 一千万
+    # extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
+    #                     f'../../data/extract_remain_data/2016/malicious/extract', '2016_10000000', 0.33)
+    # 五百万
+    # extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
+    #                     f'../../data/extract_remain_data/2016/malicious/extract', '2016_5000000', 0.17)
+    # 一百万
+    # extract_remain_data(f'../../data/extract_remain_data/2016/benign/extract/',
+    #                     f'../../data/extract_remain_data/2016/malicious/extract', '2016_1000000', 0.033)
 
     # 生成全数据集鲁棒性数据
     # lb_data_generate_train_test(f'../../data/Benign_vec',
     #                             f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', True)
     # lb_data_generate_train_test(f'../../data/Benign_vec',
     #                             f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', False, 100000)
+    # 单独按比例生成预测集数据
+    lb_data_generate_predict_percentage(f'../../data/Benign_vec',
+                                        f'../../data/DGA_vec/2016-09-19-dgarchive_full', '2016', 0.05)
+
+    # 生成多分类训练测试数据
+    # 三千万
+    # multi_data(f'../../data/Benign_vec', f'../../data/DGA_vec/2016-09-19-dgarchive_full',
+    #            '2016_30000000', 0.6)
+    # 一千万
+    # multi_data(f'../../data/Benign_vec', f'../../data/DGA_vec/2016-09-19-dgarchive_full',
+    #            '2016_10000000', 0.2)
+    # 五百万
+    # multi_data(f'../../data/Benign_vec', f'../../data/DGA_vec/2016-09-19-dgarchive_full',
+    #            '2016_5000000', 0.1)
+    # 一百万
+    # multi_data(f'../../data/Benign_vec', f'../../data/DGA_vec/2016-09-19-dgarchive_full',
+    #            '2016_1000000', 0.021)
     pass

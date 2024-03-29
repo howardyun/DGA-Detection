@@ -87,8 +87,8 @@ class LSTMMultiModel(nn.Module):
         x = self.dropout(lstm_out)
 
         # 全连接层
-        x = torch.softmax(self.fc(x), dim=1)
-
-        return x
+        return self.fc(x)
+        # x = torch.softmax(self.fc(x), dim=1)
+        # return x
         pass
     pass

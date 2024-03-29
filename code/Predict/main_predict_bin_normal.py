@@ -48,13 +48,15 @@ def initPredictParam(args):
         if int(flag) == 1:
             print("使用全部数据")
             predict_full_data_flag = True
-            predict_file = '../data/extract_remain_data/2016/predict.csv'
+            # predict_file = '../data/extract_remain_data/2016/predict.csv'
+            predict_file = '../data/extract_remain_data/2016_1000000/predict.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         else:
             print("使用部分数据")
             predict_full_data_flag = False
-            predict_file = '../data/extract_remain_data/2016/predict.csv'
+            # predict_file = '../data/extract_remain_data/2016/predict.csv'
+            predict_file = '../data/extract_remain_data/2016_1000000/predict.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         pass

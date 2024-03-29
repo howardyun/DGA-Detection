@@ -39,8 +39,10 @@ def initParam(arg):
         pass
     else:
         # 分割数据集(部分数据集)
-        train_file = '../data/extract_remain_data/2016/train.csv'
-        test_file = '../data/extract_remain_data/2016/test.csv'
+        # train_file = '../data/extract_remain_data/2016/train.csv'
+        # test_file = '../data/extract_remain_data/2016/test.csv'
+        train_file = '../data/extract_remain_data/2016_1000000/train.csv'
+        test_file = '../data/extract_remain_data/2016_1000000/test.csv'
         # train_file = '../data/train_partial2016.csv'
         # test_file = '../data/test_partial2016.csv'
         pass
@@ -104,7 +106,11 @@ if __name__ == '__main__':
 
     # 多分类损失函数
     # 多分类没有pos_weight
+    # loss_fn = nn.NLLLoss()
     loss_fn = nn.CrossEntropyLoss()
+    # class_weights = multi_label(train_file)
+    # class_weights = class_weights.to(device)
+    # loss_fn = nn.CrossEntropyLoss(weight=class_weights)
 
     # 获取本次训练的名称
     current_name = str(sys.argv[2])
@@ -126,6 +132,7 @@ if __name__ == '__main__':
         current_lr = float(pair['lr'])
         # 优化器
         pair_optimizer = torch.optim.SGD(params=current_model.parameters(), lr=current_lr)
+        # pair_optimizer = torch.optim.Adam(params=current_model.parameters(), lr=current_lr)
         train_model(current_model, current_model_name, current_path, current_model_path, loss_fn, current_lr,
                     pair_optimizer)
         pass

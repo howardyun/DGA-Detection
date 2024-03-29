@@ -189,8 +189,9 @@ class CNNMultiModel(nn.Module):
 
         # 激活，输出
         # 多分类输出
-        x = torch.softmax(self.output(x), dim=1)
-        return x
+        return self.output(x)
+        # x = torch.softmax(self.output(x), dim=1)
+        # return x
         pass
 
     pass

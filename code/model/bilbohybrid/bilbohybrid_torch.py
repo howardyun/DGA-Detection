@@ -225,7 +225,7 @@ class BBYBMultiModel(nn.Module):
         x = F.relu(self.extradense(x))
         x = self.dropoutfinal(x)
         x = F.relu(self.output(x))
-
-        return torch.softmax(x, dim=1)
+        return x
+        # return torch.softmax(x, dim=1)
         pass
     pass

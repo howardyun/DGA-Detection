@@ -41,7 +41,8 @@ class NetMulti(nn.Module):
         dropout_output = self.dropout(extradense_output)
         output = self.output(dropout_output)
         # 多分类用softmax
-        return torch.softmax(output, dim=1)
+        return output
+        # return torch.softmax(output, dim=1)
 
     pass
 

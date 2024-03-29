@@ -69,7 +69,8 @@ def initPredictParam(args):
             print("全数据集")
             # 两个都是True是因为训练集生产时已经时全数据集和部分数据集,不需要再用flag分割了,都全部读入即可
             predict_full_data_flag = True
-            predict_file = '../data/lb_full_data/lb_predict2016.csv'
+            # predict_file = '../data/lb_full_data/lb_predict2016.csv'
+            predict_file = '../data/lb_predict_data/lb_predict_2016.csv'
             # predict_file = '../data/train_partial2016.csv'
             pass
         else:
@@ -148,7 +149,8 @@ if __name__ == '__main__':
                         results_file_dir=results_file_dir, acc_pre_f1_file_path=acc_pre_f1_file_path,
                         device=device,
                         full_flag=predict_full_data_flag,
-                        BATCH_SIZE=BATCH_SIZE)
+                        BATCH_SIZE=BATCH_SIZE,
+                        lb_flag=lb_flag)
             pass
         pass
     pass

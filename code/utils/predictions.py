@@ -333,10 +333,58 @@ def SaveFamilyAccPreF1(model_name: str, data_file_path: str, results_path: str, 
     pass
 
 
-# 预测函数
 """
-需要升级一下防止内存占用过大
+增强上面的SaveFamilyAccPreF1, SaveAccPreF1两个方法
 """
+
+
+def CalAccPreF1(y, label):
+    """
+    :param y: 标签
+    :param label: 预测的标签
+    :return:
+    """
+    accuracy, precision_0, recall_0, f1_0, precision_1, recall_1, f1_1 = 0, 0, 0, 0, 0, 0, 0
+    # 用sklearn库直接计算
+    # 准确率
+    accuracy += accuracy_score(y, label)
+    # 默认情况下1,1为TP,既将恶性样本预测为恶性的情况
+    # 0,0为TN,既将良性样本预测为良性的情况
+    precision_1 += precision_score(y, label, zero_division=0)
+    recall_1 += recall_score(y, label, zero_division=0)
+    f1_1 += f1_score(y, label, zero_division=0)
+
+    # 但数据集中原本代表0的是良性样本,这里要将0,0设为TP;1,1设为TN
+    # 特殊情况:0,0为TP,既将良性样本预测为良性
+    # 1,1为TN,即将恶性样本预测为恶性情况
+    # 要修改下pos_label
+    precision_0 += precision_score(y, label, pos_label=0, zero_division=0)
+    recall_0 += recall_score(y, label, pos_label=0, zero_division=0)
+    f1_0 += f1_score(y, label, pos_label=0, zero_division=0)
+
+    return accuracy, precision_0, recall_0, f1_0, precision_1, recall_1, f1_1
+    pass
+
+
+def CalSaveResult(accuracy, precision_0, recall_0, f1_0, precision_1, recall_1, f1_1, model_name, data_file_path,
+                  acc_pre_f1_file_path):
+    # 判断是否为新建文件
+    if os.path.getsize(acc_pre_f1_file_path) == 0:
+        # 写入标题
+        with open(str(acc_pre_f1_file_path), mode='w', newline="") as csvfile:
+            df = pd.DataFrame(index=None)
+            df[0] = ['model_name', 'file_name', 'model_accuracy', 'model_precision_0', 'model_recall_0', 'model_f1_0',
+                     'model_precision_1', 'model_recall_1', 'model_f1_1']
+            df.to_csv(acc_pre_f1_file_path, index=False, header=False)
+            pass
+        pass
+
+    # 插入数据
+    df = pd.read_csv(acc_pre_f1_file_path, header=None)
+    columns = len(df.columns.tolist())
+    df[columns] = [model_name, data_file_path, accuracy, precision_0, recall_0, f1_0, precision_1, recall_1, f1_1]
+    df.to_csv(acc_pre_f1_file_path, index=False, header=False)
+    pass
 
 
 def Predictions(model: torch.nn.Module,
@@ -347,7 +395,8 @@ def Predictions(model: torch.nn.Module,
                 device: torch.device,
                 full_flag: bool,
                 BATCH_SIZE: int,
-                partial_data=1000):
+                partial_data=1000,
+                lb_flag=False):
     """
     :param model: 预测是用的模型
     :param model_name: 模型名字
@@ -358,6 +407,7 @@ def Predictions(model: torch.nn.Module,
     :param full_flag: 全数据集标志
     :param BATCH_SIZE: 批次数量
     :param partial_data: 非全数据集数据
+    :param lb_flag: 是否为鲁棒预测
     :return: 整体的准确率
     """
     # 预测数据的dataLoader
@@ -370,8 +420,8 @@ def Predictions(model: torch.nn.Module,
     # 打开模型评估模式和推理模式
     model.eval()
 
-    # 评估预测准确率
-    pred_acc = 0
+    # 评估预测准确率等指标
+    accuracy, precision_0, recall_0, f1_0, precision_1, recall_1, f1_1 = 0, 0, 0, 0, 0, 0, 0
 
     # 结果文件路径
     results_path = ''
@@ -384,24 +434,47 @@ def Predictions(model: torch.nn.Module,
             # 这里没再次sigmoid，模型中已经激化过
             # 二分类训练计算
             pred_label = torch.round(pred_logits)
+
             try:
-                pred_acc += torch.eq(pred_label, y).sum().item() / len(pred_label)
+                # 返回本轮批次的结果
+                current_accuracy, current_precision_0, current_recall_0, current_f1_0, current_precision_1, current_recall_1, current_f1_1 = CalAccPreF1(
+                    y.cpu(), pred_label.cpu())
                 pass
             except:
                 pred_label = pred_label.unsqueeze(0)
-                pred_acc += torch.eq(pred_label, y).sum().item() / len(pred_label)
+                current_accuracy, current_precision_0, current_recall_0, current_f1_0, current_precision_1, current_recall_1, current_f1_1 = CalAccPreF1(
+                    y.cpu(), pred_label.cpu())
                 pass
 
             # 写入结果
-            results_path = SaveResults(model_name=model_name, X=dga_name, y=y.cpu(), label=pred_label.cpu(),
-                                       target_path=results_file_dir)
+            if lb_flag:
+                results_path = SaveResults(model_name=model_name, X=dga_name, y=y.cpu(), label=pred_label.cpu(),
+                                           target_path=results_file_dir)
+                pass
+            # 增强后不再有临时文件,而是累计结果
+            accuracy += current_accuracy
+            precision_0 += current_precision_0
+            recall_0 += current_recall_0
+            f1_0 += current_f1_0
+            precision_1 += current_precision_1
+            recall_1 += current_recall_1
+            f1_1 += current_f1_1
             pass
         pass
 
-    # 计算最终结果
-    # 一个模型预测结果
-    SaveAccPreF1(model_name=model_name, data_file_path=file, results_path=results_path,
-                 acc_pre_f1_path=acc_pre_f1_file_path)
+    # 计算最终结果,一个模型预测结果
+    # SaveAccPreF1(model_name=model_name, data_file_path=file, results_path=results_path,
+    #              acc_pre_f1_path=acc_pre_f1_file_path)
+    # 增强后直接将累计平均即可
+    accuracy /= len(dataloader)
+    precision_0 /= len(dataloader)
+    recall_0 /= len(dataloader)
+    f1_0 /= len(dataloader)
+    precision_1 /= len(dataloader)
+    recall_1 /= len(dataloader)
+    f1_1 /= len(dataloader)
+    CalSaveResult(accuracy, precision_0, recall_0, f1_0, precision_1, recall_1, f1_1, model_name, file,
+                  acc_pre_f1_file_path)
     pass
 
 

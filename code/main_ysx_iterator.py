@@ -81,7 +81,6 @@ def initParam(arg, p1, p2):
             test_file = '../data/lb_partial_data/lb_test2016.csv'
             # train_file = '../data/train_partial2016.csv'
             # test_file = '../data/test_partial2016.csv'
-
             pass
         pass
     else:
@@ -97,8 +96,10 @@ def initParam(arg, p1, p2):
             # test_file = '../data/test_partial2016.csv'
             pass
         else:
-            train_file = '../data/extract_remain_data/2016/train.csv'
-            test_file = '../data/extract_remain_data/2016/test.csv'
+            # train_file = '../data/extract_remain_data/2016/train.csv'
+            # test_file = '../data/extract_remain_data/2016/test.csv'
+            train_file = '../data/extract_remain_data/2016_1000000/train.csv'
+            test_file = '../data/extract_remain_data/2016_1000000/test.csv'
             # train_file = '../data/train_partial2016.csv'
             # test_file = '../data/test_partial2016.csv'
             # train_file = '../data/MiniDataset/train.csv'

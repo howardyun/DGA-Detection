@@ -101,9 +101,9 @@ class MITMultiModel(nn.Module):
         lstm_out = lstm_out[:, -1, :]
 
         # 全连接层
-        x = torch.softmax(self.fc(lstm_out), dim=1)
-
-        return x
+        return self.fc(lstm_out)
+        # x = torch.softmax(self.fc(lstm_out), dim=1)
+        # return x
         pass
 
     pass

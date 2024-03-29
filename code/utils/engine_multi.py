@@ -34,7 +34,14 @@ def train_multi_step(model: torch.nn.Module,
         # 预测,模型最后锁了softmax操作,这里就不再进行softmax
         # 仅仅进行argmax
         y_logits = model(X).squeeze()
-        y_pred = y_logits.argmax(dim=1)
+        try:
+            y_pred = y_logits.argmax(dim=1)
+            pass
+        except:
+            y_logits = torch.unsqueeze(y_logits, dim=0)
+            y_pred = y_logits.argmax(dim=1)
+            pass
+
 
         # 计算和累积损失
         try:
@@ -87,7 +94,14 @@ def test_multi_step(model: torch.nn.Module,
         for batch, (X, y) in enumerate(dataloader):
             X, y = X.to(device), y.to(device)
             test_pred_logits = model(X).squeeze()
-            test_pred_pred = test_pred_logits.argmax(dim=1)
+            try:
+                test_pred_pred = test_pred_logits.argmax(dim=1)
+                pass
+            except:
+                test_pred_logits = torch.unsqueeze(test_pred_logits, dim=0)
+                test_pred_pred = test_pred_logits.argmax(dim=1)
+                pass
+
 
             # 处理tensor张量计算失误问题
             try:
