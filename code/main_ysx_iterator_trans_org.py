@@ -3,7 +3,7 @@ import os
 from torch import nn
 import sys
 
-from model.transformer_lengthen import TransformerModel
+from model.transformer_org import TransformerModel
 from utils.engine_ysx import train_ysx
 
 sys.path.append('model')

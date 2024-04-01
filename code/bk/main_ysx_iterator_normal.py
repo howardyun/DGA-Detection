@@ -4,7 +4,7 @@ from torch import nn
 import sys
 from utils.engine_ysx import train_ysx
 
-sys.path.append('model')
+sys.path.append('../model')
 # 所有可用模型
 from model.cnn.cnn_torch import CNNModel
 from model.lstm.lstm_torch import LSTMModel
@@ -85,12 +85,12 @@ def initParam(arg, p1, p2):
         else:
             flag = input("正常训练是否使用全数据集, 不是0, 是1")
         if int(flag) == 1:
-            train_file = '../data/train2016.csv'
-            test_file = '../data/test2016.csv'
+            train_file = '../../data/train2016.csv'
+            test_file = '../../data/test2016.csv'
             pass
         else:
-            train_file = '../data/extract_remain_data/2016/train.csv'
-            test_file = '../data/extract_remain_data/2016/test.csv'
+            train_file = '../../data/extract_remain_data/2016/train.csv'
+            test_file = '../../data/extract_remain_data/2016/test.csv'
             pass
         pass
 
@@ -148,11 +148,11 @@ def initPredictParam():
             flag = input("使用部分数据0, 全部数据1")
             if int(flag) == 1:
                 predict_full_data_flag = True
-                predict_file = '../data/extract_remain_data/2016/predict.csv'
+                predict_file = '../../data/extract_remain_data/2016/predict.csv'
                 pass
             else:
                 predict_full_data_flag = False
-                predict_file = '../data/extract_remain_data/2016/predict.csv'
+                predict_file = '../../data/extract_remain_data/2016/predict.csv'
                 pass
             pass
         else:
@@ -160,11 +160,11 @@ def initPredictParam():
             flag = input("使用部分数据0, 全部数据1")
             if int(flag) == 1:
                 predict_full_data_flag = True
-                predict_file = '../data/test2016.csv'
+                predict_file = '../../data/test2016.csv'
                 pass
             else:
                 predict_full_data_flag = False
-                predict_file = '../data/test2016.csv'
+                predict_file = '../../data/test2016.csv'
                 pass
             pass
         pass
@@ -319,27 +319,27 @@ if __name__ == '__main__':
         if int(save_flag) == 1:
             print("保存模型ANN")
             SaveModel(model=model_ann,
-                      target_dir="modelPth",
+                      target_dir="../modelPth",
                       lb_flag=lb_flag,
                       model_name=str(ann_lr) + "ANNModel.pth")
             print("保存模型CNN")
             SaveModel(model=model_cnn,
-                      target_dir="modelPth",
+                      target_dir="../modelPth",
                       lb_flag=lb_flag,
                       model_name=str(cnn_lr) + "CNNModel.pth")
             print("保存模型LSTM")
             SaveModel(model=model_lstm,
-                      target_dir="modelPth",
+                      target_dir="../modelPth",
                       lb_flag=lb_flag,
                       model_name=str(lstm_lr) + "LSTMModel.pth")
             print("保存模型MIT")
             SaveModel(model=model_mit,
-                      target_dir="modelPth",
+                      target_dir="../modelPth",
                       lb_flag=lb_flag,
                       model_name=str(mit_lr) + "MITModel.pth")
             print("保存模型BBYB")
             SaveModel(model=model_bbyb,
-                      target_dir="modelPth",
+                      target_dir="../modelPth",
                       lb_flag=lb_flag,
                       model_name=str(bbyb_lr) + "BBYBModel.pth")
             pass

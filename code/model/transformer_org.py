@@ -5,6 +5,8 @@ import torch.optim as optim
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from torch.nn.init import trunc_normal_
+from timm.models.layers import DropPath, Mlp
 
 # 定义PositionalEncoding
 class PositionalEncoding(nn.Module):
@@ -33,6 +35,7 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
 
+
 class TransformerModel(nn.Module):
     def __init__(self, input_dim, output_dim, d_model, nhead, num_layers, dim_feedforward, dropout):
         super(TransformerModel, self).__init__()
@@ -41,13 +44,10 @@ class TransformerModel(nn.Module):
         # 生成pe
         self.pos_encoder = PositionalEncoding(d_model, dropout)
 
-
-        # 生成一层encoder
         encoder_layers = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward,
                                                     dropout=dropout)
         # 多层encoder
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=num_layers)
-
 
         # 维度d_model→output_dim
         self.fc = nn.Linear(d_model, output_dim)
@@ -73,4 +73,33 @@ class TransformerModel(nn.Module):
         # 使用sigmoid激活函数
         output = torch.sigmoid(output)
 
+        return output
+
+
+class TransformerOrgMultiModel(nn.Module):
+    def __init__(self, input_dim, output_dim, d_model, nhead, num_layers, dim_feedforward, dropout):
+        super(TransformerOrgMultiModel, self).__init__()
+        self.embedding = nn.Embedding(input_dim, d_model)
+        self.pos_encoder = PositionalEncoding(d_model, dropout)
+
+        encoder_layers = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward,
+                                                    dropout=dropout)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=num_layers)
+
+        self.fc = nn.Linear(d_model, output_dim)
+        self.d_model = d_model
+
+    def forward(self, src):
+        src = src.permute(1, 0)
+        src = self.embedding(src) * np.sqrt(self.d_model)
+        src = self.pos_encoder(src)
+
+        output = self.transformer_encoder(src)
+        output = output.permute(1, 0, 2)
+        output = torch.mean(output, dim=1)
+        output = self.fc(output)
+
+        # 在多分类任务中，通常最后一个线性层后不直接使用激活函数
+        # 因为PyTorch的nn.CrossEntropyLoss()已经包含了Softmax
+        # 所以这里直接返回线性层的输出
         return output

@@ -4,14 +4,13 @@ from torch import nn
 import sys
 from utils.engine_ysx import train_ysx
 
-sys.path.append('model')
+sys.path.append('../model')
 # 所有可用模型
 from model.cnn.cnn_torch import CNNModel
 from model.lstm.lstm_torch import LSTMModel
 from model.mit.mit_torch import MITModel
 from model.ann.ann_torch import Net
 from model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
-from model.transfomer_org import TransformerModel
 from model.TopM_tmr import DGAAttentionModel
 
 # 所有工具类函数
@@ -83,12 +82,12 @@ def initParam(arg, p1, p2):
         else:
             flag = input("正常训练是否使用全数据集, 不是0, 是1")
         if int(flag) == 1:
-            train_file = '../data/train2016.csv'
-            test_file = '../data/test2016.csv'
+            train_file = '../../data/train2016.csv'
+            test_file = '../../data/test2016.csv'
             pass
         else:
-            train_file = '../data/extract_remain_data/2016/train.csv'
-            test_file = '../data/extract_remain_data/2016/test.csv'
+            train_file = '../../data/extract_remain_data/2016/train.csv'
+            test_file = '../../data/extract_remain_data/2016/test.csv'
             pass
         pass
 
@@ -146,11 +145,11 @@ def initPredictParam():
             flag = input("使用部分数据0, 全部数据1")
             if int(flag) == 1:
                 predict_full_data_flag = True
-                predict_file = '../data/extract_remain_data/2016/predict.csv'
+                predict_file = '../../data/extract_remain_data/2016/predict.csv'
                 pass
             else:
                 predict_full_data_flag = False
-                predict_file = '../data/extract_remain_data/2016/predict.csv'
+                predict_file = '../../data/extract_remain_data/2016/predict.csv'
                 pass
             pass
         else:
@@ -158,11 +157,11 @@ def initPredictParam():
             flag = input("使用部分数据0, 全部数据1")
             if int(flag) == 1:
                 predict_full_data_flag = True
-                predict_file = '../data/test2016.csv'
+                predict_file = '../../data/test2016.csv'
                 pass
             else:
                 predict_full_data_flag = False
-                predict_file = '../data/test2016.csv'
+                predict_file = '../../data/test2016.csv'
                 pass
             pass
         pass
@@ -241,7 +240,7 @@ if __name__ == '__main__':
         if int(save_flag) == 1:
             print("保存模型transformer")
             SaveModel(model=model_transfomer,
-                      target_dir="modelPth",
+                      target_dir="../modelPth",
                       lb_flag=lb_flag,
                       model_name=str(transformer_lr) + "ANNModel.pth")
             pass
