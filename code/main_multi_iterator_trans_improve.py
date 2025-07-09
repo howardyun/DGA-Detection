@@ -2,8 +2,7 @@ import sys
 import torch
 from torch import nn
 
-from model.transformer_improve import Trans_DGA_Multi
-from model.transformer_org import TransformerOrgMultiModel
+from code.model.transformer.transformer_improve import Trans_DGA_Multi
 
 sys.path.append('model')
 # 所有可用模型

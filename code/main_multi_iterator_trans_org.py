@@ -2,7 +2,7 @@ import sys
 import torch
 from torch import nn
 
-from model.transformer_org import TransformerOrgMultiModel
+from code.model.transformer.transformer_org import TransformerOrgMultiModel
 
 sys.path.append('model')
 # 所有可用模型

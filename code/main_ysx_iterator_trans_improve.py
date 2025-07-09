@@ -3,10 +3,9 @@ import os
 from torch import nn
 import sys
 
-from model.transformer_improve import Trans_DGA
+from code.model.transformer.transformer_improve import Trans_DGA
 
 Trans_DGA
-from model.transformer_org import TransformerModel
 from utils.engine_ysx import train_ysx
 
 sys.path.append('model')
