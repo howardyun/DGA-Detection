@@ -8,8 +8,17 @@ import csv
 elements = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
             'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.', '@', '%']
 
-
+#
 def AlpMapDigits(source_str):
+    """
+       将域名字符串转换为 长度255的向量，便于后续模型处理。
+
+       Args:
+           source_str
+
+       Returns:
+           str
+       """
     max_length = 255
     # 创建字符到下标的映射字典
     char_to_index = {char: index for index, char in enumerate(elements)}
@@ -223,9 +232,10 @@ def extract_data(benign_root_csv_path, malicious_root_csv_path, year):
     :param year: 年份，2016还是2020
     :return:
     """
-    # 创建文件夹
+    # 创建良性数据集
     benign_extract_dir = "../../data/extract_remain_data/" + year + "/benign/extract/"
     benign_remain_dir = "../../data/extract_remain_data/" + year + "/benign/remain/"
+    # 创建恶性数据集
     malicious_extract_dir = "../../data/extract_remain_data/" + year + "/malicious/extract/"
     malicious_remain_dir = "../../data/extract_remain_data/" + year + "/malicious/remain/"
     if not os.path.exists(benign_extract_dir):
@@ -517,8 +527,11 @@ def lb_data_generate_train_test(benign_root_csv_path, malicious_root_csv_path, y
 
 
 if __name__ == '__main__':
+    # 转换后的良性域名
     benign_root_csv_path = '../../data/Benign_vec'
+    # 转换后的恶意域名
     malicious_root_csv_path = '../../data/DGA_vec/2016-09-19-dgarchive_full'
+    # 目标存储的文件夹
     target_dir = "../../data/MiniDataset"
     if not os.path.exists(target_dir):
         os.makedirs(target_dir, exist_ok=True)
@@ -527,12 +540,14 @@ if __name__ == '__main__':
     train_file_path = "../../data/MiniDataset/" + '' + "/train.csv"
     test_file_path = "../../data/extract_remain_data/" + '' + "/test.csv"
 
+
     benign_df = pd.DataFrame()
     malicious_df = pd.DataFrame()
-    # 全部文件数组
+
+    # 读取文件夹下所有的全部文件数组
     csv_files_benign = glob.glob(os.path.join(benign_root_csv_path, '*.csv'))
     csv_files_malicious = glob.glob(os.path.join(malicious_root_csv_path, '*.csv'))
-    # 数据帧
+    # 链接所有的数据帧
     for file in csv_files_benign:
         benign_df = pd.concat([benign_df, pd.read_csv(file, header=None)], ignore_index=True)
         pass
@@ -540,7 +555,7 @@ if __name__ == '__main__':
         malicious_df = pd.concat([malicious_df, pd.read_csv(file, header=None)], ignore_index=True)
         pass
 
-    # 防止抽取时抽取出聚块的数据
+    # 随机化，防止抽取时抽取出聚块的数据
     benign_df = benign_df.sample(frac=1).reset_index(drop=True)
     malicious_df = malicious_df.sample(frac=1).reset_index(drop=True)
 

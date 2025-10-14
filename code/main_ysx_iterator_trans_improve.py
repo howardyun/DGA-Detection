@@ -5,7 +5,7 @@ import sys
 
 from code.model.transformer.transformer_improve import Trans_DGA
 
-Trans_DGA
+# Trans_DGA
 from utils.engine_ysx import train_ysx
 
 sys.path.append('model')
