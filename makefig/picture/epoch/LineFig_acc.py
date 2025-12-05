@@ -55,16 +55,17 @@ import matplotlib.pyplot as plt
 
 # ===== 全局设置 =====
 plt.rcParams.update({
-    "font.size": 16,           # 全局字体
+    "font.size": 20,           # 全局字体
     "axes.titlesize": 18,      # 标题字体
-    "axes.labelsize": 16,      # 坐标轴标签字体
-    "xtick.labelsize": 14,     # X轴刻度字体
-    "ytick.labelsize": 14,     # Y轴刻度字体
-    "legend.fontsize": 14,     # 图例字体
+    "axes.labelsize": 18,      # 坐标轴标签字体
+    "xtick.labelsize": 16,     # X轴刻度字体
+    "ytick.labelsize": 16,     # Y轴刻度字体
+    "legend.fontsize": 18,     # 图例字体
     "grid.linestyle": "-",    # 网格线样式
     "grid.linewidth": 0.8,     # 主网格线宽
     "grid.alpha": 1          # 主网格透明度
 })
+
 
 
 # Epoch 数
@@ -97,5 +98,5 @@ plt.grid(True)
 
 # 保存与显示
 plt.tight_layout()
-plt.savefig("multi_accuracy_plot.png", dpi=300)
+plt.savefig("multi_accuracy_plot.pdf", dpi=300)
 plt.show()
