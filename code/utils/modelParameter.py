@@ -17,6 +17,7 @@ from code.model.lstm.lstm_torch import LSTMModel
 from code.model.mit.mit_torch import MITModel
 from code.model.bilbohybrid.bilbohybrid_torch import BilBoHybridModel
 from code.model.transformer.transformer_improve import Trans_DGA
+from code.model.transformer.transfomer_torch import DGAClassifier
 
 # 多分类模型
 from code.model.cnn.cnn_torch import CNNMultiModel
@@ -82,7 +83,8 @@ def multiModelParameter(output_csv='model_parameters.csv', measure_throughput_fl
         "LSTM_Multi": LSTMMultiModel(255, 255, num_classes=65),
         "MIT_Multi": MITMultiModel(255, 255, num_classes=65),
         "BilBoHybrid_Multi": BBYBMultiModel(255, 255, 5, num_classes=65),
-        "Transformer_Multi": Trans_DGA_Multi(num_classes=65, vocab_size=40)
+        'Transformer_Multi': DGAClassifier(40, 256, 8, 1, 65, 255),
+        "SMAD_Multi": Trans_DGA_Multi(num_classes=65, vocab_size=40)
     }
 
     # 准备数据列表
@@ -95,7 +97,11 @@ def multiModelParameter(output_csv='model_parameters.csv', measure_throughput_fl
         # 计算FLops
         try:
             model.eval()
-            if name == 'Transformer_Multi':
+            if name == 'SMAD_Multi':
+                input_seq_len = 255
+                input_data_flops = torch.randint(0, 40, (1, input_seq_len))
+                pass
+            elif name == 'Transformer_Multi':
                 input_seq_len = 255
                 input_data_flops = torch.randint(0, 40, (1, input_seq_len))
                 pass
@@ -118,7 +124,10 @@ def multiModelParameter(output_csv='model_parameters.csv', measure_throughput_fl
                 # 将模型移至指定设备
                 model = model.to(device)
                 # 构造适合吞吐量测量的输入
-                if name == "Transformer_Multi":
+                if name == "SMAD_Multi":
+                    input_data_throughput = torch.randint(0, 40, (batch_size, input_seq_len))
+                    pass
+                elif name == "Transformer_Multi":
                     input_data_throughput = torch.randint(0, 40, (batch_size, input_seq_len))
                     pass
                 else:
@@ -182,7 +191,8 @@ def modelParameter(output_csv='model_parameters.csv', measure_throughput_flag=Fa
         "LSTM": LSTMModel(255, 255),
         "MIT": MITModel(255, 255),
         "BilBoHybrid": BilBoHybridModel(255, 255, 5),
-        "Transformer": Trans_DGA(num_classes=1, vocab_size=40)
+        'Transformer': DGAClassifier(40, 256, 8, 1, 1, 255),
+        "SMAD": Trans_DGA(num_classes=1, vocab_size=40)
     }
 
     # 准备数据列表
@@ -195,12 +205,18 @@ def modelParameter(output_csv='model_parameters.csv', measure_throughput_flag=Fa
         # 构造适合模型的输入张量（batch_size=1 用于 FLOPs 计算）
         try:
             model.eval()
-            if name == "Transformer":
+            if name == "SMAD":
                 input_seq_len = 255
                 input_data_flops = torch.randint(0, 40, (1, input_seq_len))
+                pass
+            elif name == 'Transformer':
+                input_seq_len = 255
+                input_data_flops = torch.randint(0, 40, (1, input_seq_len))
+                pass
             else:
                 input_seq_len = 255
                 input_data_flops = torch.randint(0, 255, (1, input_seq_len))
+                pass
 
             # 计算 FLOPs
             flops, _ = profile(model, inputs=(input_data_flops,), verbose=False)
@@ -215,10 +231,15 @@ def modelParameter(output_csv='model_parameters.csv', measure_throughput_flag=Fa
                 # 将模型移至指定设备
                 model = model.to(device)
                 # 构造适合吞吐量测量的输入
-                if name == "Transformer":
+                if name == "SMAD":
                     input_data_throughput = torch.randint(0, 40, (batch_size, input_seq_len))
+                    pass
+                elif name == 'Transformer':
+                    input_data_throughput = torch.randint(0, 40, (batch_size, input_seq_len))
+                    pass
                 else:
                     input_data_throughput = torch.randint(0, 255, (batch_size, input_seq_len))
+                    pass
 
                 throughput = measure_throughput(model, input_data_throughput, batch_size, num_iterations, device)
             except Exception as e:
